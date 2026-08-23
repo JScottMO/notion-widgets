@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blue Pencil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap">
+<style>
+  :root {
+    --bg: #F5F7FA;
+    --surface: #FFFFFF;
+    --ink: #14212E;
+    --muted: #5C6B7B;
+    --line: #DDE4EB;
+    --line-soft: #E8EDF2;
+    --accent: #1A5FA0;
+    --accent-soft: #E7EFF7;
+    --shadow: 0 1px 2px rgba(20, 33, 46, .06), 0 8px 24px -16px rgba(20, 33, 46, .28);
+
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #131A21;
+      --surface: #1A232C;
+      --ink: #E6EDF3;
+      --muted: #93A3B2;
+      --line: #2A3742;
+      --line-soft: #222D38;
+      --accent: #6FB0E8;
+      --accent-soft: #1E2C3A;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .32), 0 8px 24px -16px rgba(0, 0, 0, .6);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #131A21;
+    --surface: #1A232C;
+    --ink: #E6EDF3;
+    --muted: #93A3B2;
+    --line: #2A3742;
+    --line-soft: #222D38;
+    --accent: #6FB0E8;
+    --accent-soft: #1E2C3A;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .32), 0 8px 24px -16px rgba(0, 0, 0, .6);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    height: 100%;
+    min-height: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  /* ---- tally band ---- */
+
+  .tally {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 22px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 14px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tally::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: var(--accent);
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .stat--primary { margin-left: 6px; }
+
+  .rule {
+    align-self: stretch;
+    width: 1px;
+    background: var(--line-soft);
+    margin: 2px 0;
+  }
+
+  .mini {
+    display: grid;
+    grid-template-columns: auto auto;
+    align-items: baseline;
+    gap: 6px 14px;
+  }
+
+  .mini .label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .mini .value {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    font-size: 1.0625rem;
+    line-height: 1;
+    text-align: right;
+    color: var(--ink);
+  }
+
+  .stat .label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .stat .value {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--ink);
+    font-size: 1.375rem;
+  }
+
+  .stat--primary .value {
+    font-size: clamp(2rem, 7vw, 2.75rem);
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: -.01em;
+  }
+
+  .spacer { flex: 1 1 auto; }
+
+  .clear {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    align-self: center;
+    transition: color .15s ease, border-color .15s ease, background-color .15s ease;
+  }
+
+  .clear:hover:not(:disabled) {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .clear:disabled {
+    opacity: .4;
+    cursor: default;
+  }
+
+  /* ---- writing surface ---- */
+
+  .sheet {
+    flex: 1 1 auto;
+    min-height: 120px;
+    display: flex;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    transition: border-color .15s ease;
+  }
+
+  .sheet:focus-within {
+    border-color: var(--accent);
+    box-shadow: var(--shadow), 0 0 0 3px var(--accent-soft);
+  }
+
+  textarea {
+    flex: 1 1 auto;
+    width: 100%;
+    resize: none;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 15px;
+    line-height: 1.65;
+    padding: 16px 18px;
+    border-radius: 10px;
+  }
+
+  textarea::placeholder {
+    color: var(--muted);
+    font-style: italic;
+    opacity: .75;
+  }
+
+  .foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 11px;
+    color: var(--muted);
+    padding: 0 4px;
+  }
+
+  .foot .hint { font-style: italic; }
+
+  .foot .mark {
+    font-family: var(--mono);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    font-size: 10px;
+  }
+
+  @media (max-width: 420px) {
+    .shell { padding: 12px; gap: 10px; }
+    .tally { gap: 8px 18px; padding: 12px 14px; }
+    .foot .hint { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div class="tally">
+    <div class="stat stat--primary">
+      <span class="label">Words</span>
+      <span class="value" id="words">0</span>
+    </div>
+    <span class="rule" aria-hidden="true"></span>
+    <div class="mini">
+      <span class="label">Characters</span>
+      <span class="value" id="chars">0</span>
+      <span class="label">No spaces</span>
+      <span class="value" id="charsNoSpace">0</span>
+    </div>
+    <span class="spacer"></span>
+    <button class="clear" id="clear" type="button" disabled>Clear</button>
+  </div>
+
+  <div class="sheet">
+    <textarea id="text" placeholder="Paste or type your text here and the counts update as you go." spellcheck="false" aria-label="Text to count"></textarea>
+  </div>
+
+  <div class="foot">
+    <span class="hint">Counts update live. Nothing you type leaves this box.</span>
+    <span class="mark">Blue Pencil</span>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var input = document.getElementById('text');
+    var wordsEl = document.getElementById('words');
+    var charsEl = document.getElementById('chars');
+    var noSpaceEl = document.getElementById('charsNoSpace');
+    var clearBtn = document.getElementById('clear');
+    var fmt = new Intl.NumberFormat();
+
+    function countWords(text) {
+      var trimmed = text.replace(/(\S)[–—](?=\S)/g, '$1 ').trim();
+      if (!trimmed) return 0;
+      return trimmed.split(/\s+/).length;
+    }
+
+    function update() {
+      var text = input.value;
+      wordsEl.textContent = fmt.format(countWords(text));
+      charsEl.textContent = fmt.format(Array.from(text).length);
+      noSpaceEl.textContent = fmt.format(Array.from(text.replace(/\s/g, '')).length);
+      clearBtn.disabled = text.length === 0;
+    }
+
+    input.addEventListener('input', update);
+    clearBtn.addEventListener('click', function () {
+      input.value = '';
+      update();
+      input.focus();
+    });
+
+    update();
+  })();
+</script>
+</body>
+</html>

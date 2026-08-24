@@ -197,6 +197,12 @@
     color: var(--muted); font-weight: 400; font-size: 11px;
   }
 
+  .chip .at {
+    display: inline-block; margin-left: 6px; font-style: normal;
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: .04em;
+    color: var(--muted); vertical-align: 1px;
+  }
+
   .grid[data-focus] .chip { opacity: .17; }
   .grid[data-focus="cbt"]   .chip--cbt,
   .grid[data-focus="sub"]   .chip--sub,
@@ -263,7 +269,7 @@
   <div class="legend" role="group" aria-label="Filter by workstream">
     <button class="key key--cbt" type="button" data-stream="cbt" aria-pressed="false"><span class="sw" aria-hidden="true"></span><span class="kn">CBT Column</span><span class="kc">monthly</span></button>
     <button class="key key--sub" type="button" data-stream="sub" aria-pressed="false"><span class="sw" aria-hidden="true"></span><span class="kn">Substack</span><span class="kc">monthly</span></button>
-    <button class="key key--trail" type="button" data-stream="trail" aria-pressed="false"><span class="sw" aria-hidden="true"></span><span class="kn">Paper Trail</span><span class="kc">weekly</span></button>
+    <button class="key key--trail" type="button" data-stream="trail" aria-pressed="false"><span class="sw" aria-hidden="true"></span><span class="kn">Paper Trail</span><span class="kc">alternating</span></button>
     <button class="key key--prep" type="button" data-stream="prep" aria-pressed="false"><span class="sw" aria-hidden="true"></span><span class="kn">Reading &amp; prep</span><span class="kc">ongoing</span></button>
   </div>
   <div class="scroll">
@@ -271,43 +277,43 @@
       <div class="head" aria-hidden="true"><span class="rail"></span><span class="dh">Sun</span><span class="dh">Mon</span><span class="dh">Tue</span><span class="dh">Wed</span><span class="dh">Thu</span><span class="dh">Fri</span><span class="dh">Sat</span></div>
       <div class="week">
         <span class="rail">W1</span>
-        <div class="cell" data-week="1" data-day="0"><span class="dayname">Sun</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="select-topics">Read and Select Topics</span></div></div>
-        <div class="cell" data-week="1" data-day="1"><span class="dayname">Mon</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--cbt" data-stream="cbt" data-key="draft-cbt">Draft CBT Column</span></div></div>
-        <div class="cell" data-week="1" data-day="2"><span class="dayname">Tue</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="book-notes">Read and Book Notes / Buffer</span></div></div>
-        <div class="cell" data-week="1" data-day="3"><span class="dayname">Wed</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--cbt" data-stream="cbt" data-key="finish-cbt">Finish CBT Column</span><span class="chip chip--trail" data-stream="trail" data-key="post-trail">Post Paper Trail</span></div></div>
-        <div class="cell" data-week="1" data-day="4"><span class="dayname">Thu</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="book-notes">Read and Book Notes / Buffer</span></div></div>
-        <div class="cell" data-week="1" data-day="5"><span class="dayname">Fri</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--trail" data-stream="trail" data-key="perfect-trail">Perfect Paper Trail for LinkedIn and YT</span></div></div>
-        <div class="cell" data-week="1" data-day="6"><span class="dayname">Sat</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--trail" data-stream="trail" data-key="record-video">Record Videos and send for editing</span></div></div>
+        <div class="cell" data-week="1" data-day="0"><span class="dayname">Sun</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="select-topics" data-title="Read and Select Topics">Read and Select Topics</span></div></div>
+        <div class="cell" data-week="1" data-day="1"><span class="dayname">Mon</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--cbt" data-stream="cbt" data-key="draft-cbt" data-title="Draft CBT Column">Draft CBT Column</span></div></div>
+        <div class="cell" data-week="1" data-day="2"><span class="dayname">Tue</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="book-notes" data-title="Read and Book Notes / Buffer">Read and Book Notes / Buffer</span></div></div>
+        <div class="cell" data-week="1" data-day="3"><span class="dayname">Wed</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--cbt" data-stream="cbt" data-key="finish-cbt" data-title="Finish CBT Column">Finish CBT Column</span><span class="chip chip--trail" data-stream="trail" data-key="perfect-trail" data-title="Perfect Paper Trail for LinkedIn and YT">Perfect Paper Trail for LinkedIn and YT<em class="at">2pm</em></span></div></div>
+        <div class="cell" data-week="1" data-day="4"><span class="dayname">Thu</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="book-notes" data-title="Read and Book Notes / Buffer">Read and Book Notes / Buffer</span></div></div>
+        <div class="cell" data-week="1" data-day="5"><span class="dayname">Fri</span><span class="date" aria-hidden="true"></span><div class="stack"></div></div>
+        <div class="cell" data-week="1" data-day="6"><span class="dayname">Sat</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--trail" data-stream="trail" data-key="record-video" data-title="Record Videos and send for editing">Record Videos and send for editing</span></div></div>
       </div>
       <div class="week">
         <span class="rail">W2</span>
-        <div class="cell" data-week="2" data-day="0"><span class="dayname">Sun</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="select-topics">Read and Select Topics</span></div></div>
-        <div class="cell" data-week="2" data-day="1"><span class="dayname">Mon</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--sub" data-stream="sub" data-key="compile-sub">Compile Substack</span><span class="chip chip--cbt" data-stream="cbt" data-key="send-cbt">Send CBT Column</span></div></div>
-        <div class="cell" data-week="2" data-day="2"><span class="dayname">Tue</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="book-notes">Read and Book Notes / Buffer</span></div></div>
-        <div class="cell" data-week="2" data-day="3"><span class="dayname">Wed</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--trail" data-stream="trail" data-key="post-trail">Post Paper Trail</span></div></div>
-        <div class="cell" data-week="2" data-day="4"><span class="dayname">Thu</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="book-notes">Read and Book Notes / Buffer</span></div></div>
-        <div class="cell" data-week="2" data-day="5"><span class="dayname">Fri</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--trail" data-stream="trail" data-key="perfect-trail">Perfect Paper Trail for LinkedIn and YT</span></div></div>
-        <div class="cell" data-week="2" data-day="6"><span class="dayname">Sat</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--trail" data-stream="trail" data-key="record-video">Record Videos and send for editing</span></div></div>
+        <div class="cell" data-week="2" data-day="0"><span class="dayname">Sun</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="select-topics" data-title="Read and Select Topics">Read and Select Topics</span></div></div>
+        <div class="cell" data-week="2" data-day="1"><span class="dayname">Mon</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--sub" data-stream="sub" data-key="compile-sub" data-title="Compile Substack">Compile Substack</span><span class="chip chip--cbt" data-stream="cbt" data-key="send-cbt" data-title="Send CBT Column">Send CBT Column</span></div></div>
+        <div class="cell" data-week="2" data-day="2"><span class="dayname">Tue</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="book-notes" data-title="Read and Book Notes / Buffer">Read and Book Notes / Buffer</span></div></div>
+        <div class="cell" data-week="2" data-day="3"><span class="dayname">Wed</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--trail" data-stream="trail" data-key="post-trail" data-title="Post Paper Trail">Post Paper Trail</span></div></div>
+        <div class="cell" data-week="2" data-day="4"><span class="dayname">Thu</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="book-notes" data-title="Read and Book Notes / Buffer">Read and Book Notes / Buffer</span></div></div>
+        <div class="cell" data-week="2" data-day="5"><span class="dayname">Fri</span><span class="date" aria-hidden="true"></span><div class="stack"></div></div>
+        <div class="cell" data-week="2" data-day="6"><span class="dayname">Sat</span><span class="date" aria-hidden="true"></span><div class="stack"></div></div>
       </div>
       <div class="week">
         <span class="rail">W3</span>
-        <div class="cell" data-week="3" data-day="0"><span class="dayname">Sun</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="select-topics">Read and Select Topics</span></div></div>
-        <div class="cell" data-week="3" data-day="1"><span class="dayname">Mon</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="book-notes">Read and Book Notes / Buffer</span></div></div>
-        <div class="cell" data-week="3" data-day="2"><span class="dayname">Tue</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="book-notes">Read and Book Notes / Buffer</span></div></div>
-        <div class="cell" data-week="3" data-day="3"><span class="dayname">Wed</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--trail" data-stream="trail" data-key="post-trail">Post Paper Trail</span></div></div>
-        <div class="cell" data-week="3" data-day="4"><span class="dayname">Thu</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="book-notes">Read and Book Notes / Buffer</span></div></div>
-        <div class="cell" data-week="3" data-day="5"><span class="dayname">Fri</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--trail" data-stream="trail" data-key="perfect-trail">Perfect Paper Trail for LinkedIn and YT</span></div></div>
-        <div class="cell" data-week="3" data-day="6"><span class="dayname">Sat</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--trail" data-stream="trail" data-key="record-video">Record Videos and send for editing</span></div></div>
+        <div class="cell" data-week="3" data-day="0"><span class="dayname">Sun</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="select-topics" data-title="Read and Select Topics">Read and Select Topics</span></div></div>
+        <div class="cell" data-week="3" data-day="1"><span class="dayname">Mon</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="book-notes" data-title="Read and Book Notes / Buffer">Read and Book Notes / Buffer</span></div></div>
+        <div class="cell" data-week="3" data-day="2"><span class="dayname">Tue</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="book-notes" data-title="Read and Book Notes / Buffer">Read and Book Notes / Buffer</span></div></div>
+        <div class="cell" data-week="3" data-day="3"><span class="dayname">Wed</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--trail" data-stream="trail" data-key="perfect-trail" data-title="Perfect Paper Trail for LinkedIn and YT">Perfect Paper Trail for LinkedIn and YT<em class="at">2pm</em></span></div></div>
+        <div class="cell" data-week="3" data-day="4"><span class="dayname">Thu</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="book-notes" data-title="Read and Book Notes / Buffer">Read and Book Notes / Buffer</span></div></div>
+        <div class="cell" data-week="3" data-day="5"><span class="dayname">Fri</span><span class="date" aria-hidden="true"></span><div class="stack"></div></div>
+        <div class="cell" data-week="3" data-day="6"><span class="dayname">Sat</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--trail" data-stream="trail" data-key="record-video" data-title="Record Videos and send for editing">Record Videos and send for editing</span></div></div>
       </div>
       <div class="week">
         <span class="rail">W4</span>
-        <div class="cell" data-week="4" data-day="0"><span class="dayname">Sun</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="select-topics">Read and Select Topics</span></div></div>
-        <div class="cell" data-week="4" data-day="1"><span class="dayname">Mon</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--sub" data-stream="sub" data-key="draft-sub">Draft Substack</span></div></div>
-        <div class="cell" data-week="4" data-day="2"><span class="dayname">Tue</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="book-notes">Read and Book Notes / Buffer</span></div></div>
-        <div class="cell" data-week="4" data-day="3"><span class="dayname">Wed</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--sub" data-stream="sub" data-key="finish-sub">Finish Substack</span><span class="chip chip--trail" data-stream="trail" data-key="post-trail">Post Paper Trail</span></div></div>
-        <div class="cell" data-week="4" data-day="4"><span class="dayname">Thu</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="book-notes">Read and Book Notes / Buffer</span></div></div>
-        <div class="cell" data-week="4" data-day="5"><span class="dayname">Fri</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--trail" data-stream="trail" data-key="perfect-trail">Perfect Paper Trail for LinkedIn and YT</span></div></div>
-        <div class="cell" data-week="4" data-day="6"><span class="dayname">Sat</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--trail" data-stream="trail" data-key="record-video">Record Videos and send for editing</span></div></div>
+        <div class="cell" data-week="4" data-day="0"><span class="dayname">Sun</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="select-topics" data-title="Read and Select Topics">Read and Select Topics</span></div></div>
+        <div class="cell" data-week="4" data-day="1"><span class="dayname">Mon</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--sub" data-stream="sub" data-key="draft-sub" data-title="Draft Substack">Draft Substack</span></div></div>
+        <div class="cell" data-week="4" data-day="2"><span class="dayname">Tue</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="book-notes" data-title="Read and Book Notes / Buffer">Read and Book Notes / Buffer</span></div></div>
+        <div class="cell" data-week="4" data-day="3"><span class="dayname">Wed</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--sub" data-stream="sub" data-key="finish-sub" data-title="Finish Substack">Finish Substack</span><span class="chip chip--trail" data-stream="trail" data-key="post-trail" data-title="Post Paper Trail">Post Paper Trail</span></div></div>
+        <div class="cell" data-week="4" data-day="4"><span class="dayname">Thu</span><span class="date" aria-hidden="true"></span><div class="stack"><span class="chip chip--prep" data-stream="prep" data-key="book-notes" data-title="Read and Book Notes / Buffer">Read and Book Notes / Buffer</span></div></div>
+        <div class="cell" data-week="4" data-day="5"><span class="dayname">Fri</span><span class="date" aria-hidden="true"></span><div class="stack"></div></div>
+        <div class="cell" data-week="4" data-day="6"><span class="dayname">Sat</span><span class="date" aria-hidden="true"></span><div class="stack"></div></div>
       </div>
     </div>
   </div>
@@ -317,7 +323,7 @@
     <button class="btn" id="copyics" type="button">Copy text</button>
     <p>Notion’s embed sandbox can block downloads. Copy this, paste it into a plain text file, and save it with a <code>.ics</code> extension — or open this page in its own browser tab, where the buttons download normally.</p>
   </details>
-  <p class="foot">Mondays and Wednesdays carry the deliverables; the rest of the week is intake on one side and distribution on the other. Calendar events start at 8am and stack back-to-back on days with two tasks. Reading and prep stay off the calendar.</p>
+  <p class="foot">Paper Trail alternates — weeks 1 and 3 perfect and record, weeks 2 and 4 post. Mondays hold the monthly drafting. Events start at 8am and stack back-to-back when a day holds more than one; Perfect Paper Trail is the exception, running Wednesday afternoons from 2pm. Reading and prep stay off the calendar.</p>
 </div>
 
 <script>
@@ -347,6 +353,8 @@
   };
   var STREAM_NAME = { cbt: 'CBT Column', sub: 'Substack', trail: 'Paper Trail' };
   var START_HOUR = 8;
+  // tasks that sit at their own time instead of stacking from 8am
+  var FIXED_START = { 'perfect-trail': 14 * 60 };
 
   var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var DAYNAME = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -387,12 +395,13 @@
         var key = chip.getAttribute('data-key');
         var dur = MINUTES[key];
         if (!dur) { return; }                       // reading & prep: no event
+        var start = FIXED_START.hasOwnProperty(key) ? FIXED_START[key] : mins;
         out.push({
           stream: chip.getAttribute('data-stream'),
-          title: chip.textContent.trim(),
-          date: d, week: wk, startMin: mins, dur: dur
+          title: chip.getAttribute('data-title') || chip.textContent.trim(),
+          date: d, week: wk, startMin: start, dur: dur
         });
-        mins += dur;
+        mins = start + dur;                         // anything after resumes from here
       });
     });
     return out;

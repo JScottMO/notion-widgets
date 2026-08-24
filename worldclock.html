@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Longitude</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@300;400;600&family=Familjen+Grotesk:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #EEF0F3;
+    --surface: #FFFFFF;
+    --ink: #171C24;
+    --muted: #5F6A78;
+    --faint: #8B96A4;
+    --line: #DDE2E8;
+    --brass: #9C6B12;
+    --brass-soft: #F3EADA;
+
+    --night: #AEB8C4;
+    --edge:  #D5D9DE;
+    --day:   #F1EBDD;
+
+    --display: "Familjen Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: "Chivo Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14171C; --surface: #1C2027; --ink: #E9ECF1; --muted: #97A1AE; --faint: #6E7987;
+      --line: #2C323A; --brass: #D9A441; --brass-soft: #2A2317;
+      --night: #2B333F; --edge: #414A56; --day: #5C5442;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14171C; --surface: #1C2027; --ink: #E9ECF1; --muted: #97A1AE; --faint: #6E7987;
+    --line: #2C323A; --brass: #D9A441; --brass-soft: #2A2317;
+    --night: #2B333F; --edge: #414A56; --day: #5C5442;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: var(--display); line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .board {
+    margin: 10px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(124px, 1fr));
+  }
+
+  .city { padding: 11px 12px 10px; border-left: 1px solid var(--line); min-width: 0; }
+  .city:first-child { border-left: 0; }
+
+  .top {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 6px;
+  }
+  .name {
+    font-size: 14px; font-weight: 600; letter-spacing: -.01em; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .flag {
+    flex: none; font-size: 15px; line-height: 1.1;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  }
+  .region {
+    font-size: 10.5px; color: var(--faint); margin-top: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .time {
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    font-weight: 600; font-size: clamp(1.55rem, 4.4vw, 2.05rem); line-height: 1;
+    letter-spacing: -.035em; margin: 9px 0 0;
+    display: flex; align-items: baseline; gap: 4px;
+  }
+  .mer {
+    font-size: 10px; font-weight: 400; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--muted);
+  }
+
+  .band {
+    position: relative; height: 4px; border-radius: 2px; margin: 9px 0 7px;
+    background: linear-gradient(90deg,
+      var(--night) 0 25%, var(--edge) 25% 37.5%, var(--day) 37.5% 75%,
+      var(--edge) 75% 87.5%, var(--night) 87.5% 100%);
+  }
+  .now {
+    position: absolute; top: -3px; bottom: -3px; width: 2px;
+    background: var(--brass); border-radius: 1px;
+    transform: translateX(-1px);
+  }
+
+  .meta {
+    display: flex; flex-wrap: wrap; align-items: baseline;
+    justify-content: space-between; gap: 0 8px;
+    font-size: 11px; color: var(--muted);
+  }
+  .date { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .date b { font-weight: 600; color: var(--ink); }
+  .off {
+    font-family: var(--mono); font-size: 10px; color: var(--faint);
+    white-space: nowrap; flex: none;
+  }
+  .phase { text-transform: lowercase; }
+
+  .bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 6px 12px; border-top: 1px solid var(--line);
+  }
+  .zone {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--faint);
+  }
+  .toggle {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: .06em;
+    color: var(--muted); background: transparent;
+    border: 1px solid var(--line); border-radius: 5px; padding: 3px 8px; cursor: pointer;
+  }
+  .toggle:hover { color: var(--brass); border-color: var(--brass); }
+  :focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+
+  @media (max-width: 360px) {
+    .city { border-left: 0; border-top: 1px solid var(--line); }
+    .city:first-child { border-top: 0; }
+  }
+</style>
+
+</head>
+<body>
+<div class="board">
+  <div class="strip" id="strip"></div>
+  <div class="bar">
+    <span class="zone" id="zone"></span>
+    <button class="toggle" id="fmt" type="button">24-hour</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var HOME = 'America/Chicago';
+
+  // home first, then west to east by longitude
+  var CITIES = [
+    { name: 'Columbia', region: 'Central Time',   tz: HOME,              flag: '🇺🇸', home: true },
+    { name: 'London',   region: 'United Kingdom', tz: 'Europe/London',   flag: '🇬🇧' },
+    { name: 'Tashkent', region: 'Uzbekistan',     tz: 'Asia/Tashkent',   flag: '🇺🇿' },
+    { name: 'Kerala',   region: 'India',          tz: 'Asia/Kolkata',    flag: '🇮🇳' },
+    { name: 'Dunedin',  region: 'New Zealand',    tz: 'Pacific/Auckland',flag: '🇳🇿' }
+  ];
+
+  var h12 = true;
+
+  // Wall-clock fields for an instant in a given zone.
+  function partsIn(tz, when) {
+    var f = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz, hourCycle: 'h23',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      weekday: 'short'
+    });
+    var o = {};
+    f.formatToParts(when).forEach(function (p) { o[p.type] = p.value; });
+    return {
+      y: +o.year, mo: +o.month, d: +o.day,
+      h: +o.hour, mi: +o.minute, s: +o.second,
+      wd: o.weekday
+    };
+  }
+
+  // Zone offset from UTC, in minutes, at this instant.
+  function offsetMin(tz, when) {
+    var p = partsIn(tz, when);
+    var asUTC = Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi, p.s);
+    return Math.round((asUTC - Math.floor(when.getTime() / 1000) * 1000) / 60000);
+  }
+
+  function signed(mins) {
+    if (mins === 0) { return 'same time'; }
+    var sign = mins < 0 ? '−' : '+';
+    var a = Math.abs(mins);
+    var h = Math.floor(a / 60), m = a % 60;
+    return sign + h + (m ? ':' + (m < 10 ? '0' : '') + m : '') + 'h';
+  }
+
+  var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  function phaseOf(h) {
+    if (h < 5)  { return 'night'; }
+    if (h < 9)  { return 'dawn'; }
+    if (h < 12) { return 'morning'; }
+    if (h < 17) { return 'afternoon'; }
+    if (h < 21) { return 'evening'; }
+    return 'night';
+  }
+
+  var strip = document.getElementById('strip');
+  var nodes = CITIES.map(function (c) {
+    var el = document.createElement('div');
+    el.className = 'city';
+    el.innerHTML =
+      '<div class="top"><span class="name"></span><span class="flag" role="img"></span></div>' +
+      '<div class="region"></div>' +
+      '<div class="time"><span class="hm"></span><span class="mer"></span></div>' +
+      '<div class="band"><span class="now"></span></div>' +
+      '<div class="meta"><span class="date"></span><span class="off"></span></div>';
+    el.querySelector('.name').textContent = c.name;
+    el.querySelector('.region').textContent = c.region;
+    var fl = el.querySelector('.flag');
+    fl.textContent = c.flag;
+    fl.setAttribute('aria-label', c.region);
+    strip.appendChild(el);
+    return {
+      city: c,
+      hm: el.querySelector('.hm'),
+      mer: el.querySelector('.mer'),
+      now: el.querySelector('.now'),
+      date: el.querySelector('.date'),
+      off: el.querySelector('.off')
+    };
+  });
+
+  var zoneEl = document.getElementById('zone');
+
+  function render() {
+    var when = new Date();
+    var homeP = partsIn(HOME, when);
+    var homeOff = offsetMin(HOME, when);
+
+    nodes.forEach(function (n) {
+      var p = partsIn(n.city.tz, when);
+
+      var hh = p.h, mer = '';
+      if (h12) {
+        mer = p.h < 12 ? 'am' : 'pm';
+        hh = p.h % 12; if (hh === 0) { hh = 12; }
+      }
+      n.hm.textContent = (h12 ? hh : (hh < 10 ? '0' + hh : hh)) + ':' + (p.mi < 10 ? '0' : '') + p.mi;
+      n.mer.textContent = mer;
+
+      n.now.style.left = ((p.h * 60 + p.mi) / 1440 * 100) + '%';
+
+      var sameDay = p.y === homeP.y && p.mo === homeP.mo && p.d === homeP.d;
+      var stamp = p.wd + ' ' + p.d;
+      n.date.innerHTML = (sameDay ? '' : '<b>' + stamp + '</b> · ') +
+        '<span class="phase">' + phaseOf(p.h) + '</span>';
+
+      n.off.textContent = n.city.home ? 'your time'
+        : signed(offsetMin(n.city.tz, when) - homeOff);
+    });
+
+    zoneEl.textContent = new Intl.DateTimeFormat('en-US', {
+      timeZone: HOME, timeZoneName: 'short'
+    }).formatToParts(when).filter(function (p) { return p.type === 'timeZoneName'; })[0].value
+      + ' · offsets from Central';
+  }
+
+  document.getElementById('fmt').addEventListener('click', function () {
+    h12 = !h12;
+    this.textContent = h12 ? '24-hour' : '12-hour';
+    render();
+  });
+
+  render();
+  // re-render on the second boundary so the minute never lags
+  setTimeout(function () { render(); setInterval(render, 1000); }, 1000 - (Date.now() % 1000));
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { render(); } });
+})();
+</script>
+
+</body>
+</html>

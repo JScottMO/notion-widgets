@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meridian</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@300;400;600&family=Familjen+Grotesk:wght@400;500;600&display=swap">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #EEF0F3; --surface: #FFFFFF; --sunken: #F4F6F8;
+    --ink: #171C24; --muted: #5F6A78; --faint: #8B96A4;
+    --line: #DDE2E8; --brass: #9C6B12; --brass-soft: #F3EADA;
+    --alert: #A33B12; --alert-soft: #F8ECE6;
+    --display: "Familjen Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: "Chivo Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14171C; --surface: #1C2027; --sunken: #171B21;
+      --ink: #E9ECF1; --muted: #97A1AE; --faint: #6E7987;
+      --line: #2C323A; --brass: #D9A441; --brass-soft: #2A2317;
+      --alert: #E58F62; --alert-soft: #2E1F18;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14171C; --surface: #1C2027; --sunken: #171B21;
+    --ink: #E9ECF1; --muted: #97A1AE; --faint: #6E7987;
+    --line: #2C323A; --brass: #D9A441; --brass-soft: #2A2317;
+    --alert: #E58F62; --alert-soft: #2E1F18;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: var(--display); line-height: 1.45; -webkit-font-smoothing: antialiased;
+  }
+
+  .board {
+    margin: 10px; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+  }
+
+  /* ---- the question ---- */
+
+  .ask {
+    display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 14px;
+    padding: 12px 14px; border-bottom: 1px solid var(--line);
+  }
+  .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .field.grow { flex: 1 1 190px; }
+
+  label {
+    font-family: var(--mono); font-size: 9.5px; font-weight: 600;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--faint);
+  }
+  .pair { display: flex; gap: 6px; }
+  .src {
+    margin: 1px 0 0; font-family: var(--mono); font-size: 10px; color: var(--faint);
+    white-space: nowrap;
+  }
+
+  input {
+    font-family: var(--display); font-size: 13px; color: var(--ink);
+    background: var(--sunken); border: 1px solid var(--line);
+    border-radius: 7px; padding: 7px 9px; min-width: 0; width: 100%;
+  }
+  input[type="date"] { max-width: 148px; }
+  input[type="time"] { max-width: 132px; }
+  input:focus { outline: 2px solid var(--brass); outline-offset: -1px; border-color: var(--brass); }
+  input::placeholder { color: var(--faint); }
+
+  .arrow { color: var(--faint); font-size: 15px; padding-bottom: 22px; flex: none; }
+
+  .selwrap { position: relative; display: flex; }
+  .selwrap::after {
+    content: ""; position: absolute; right: 10px; top: 50%;
+    width: 0; height: 0; margin-top: -2px; pointer-events: none;
+    border-left: 4px solid transparent; border-right: 4px solid transparent;
+    border-top: 5px solid var(--muted);
+  }
+  select {
+    -webkit-appearance: none; appearance: none;
+    font-family: var(--display); font-size: 13px; color: var(--ink);
+    background: var(--sunken); border: 1px solid var(--line);
+    border-radius: 7px; padding: 7px 26px 7px 9px;
+    width: 100%; min-width: 0; cursor: pointer;
+    text-overflow: ellipsis;
+  }
+  select:focus { outline: 2px solid var(--brass); outline-offset: -1px; border-color: var(--brass); }
+  optgroup { font-style: normal; font-weight: 600; }
+  option { font-weight: 400; }
+
+  /* ---- the answer ---- */
+
+  .answer {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px;
+    padding: 13px 14px 14px;
+  }
+  .big {
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    font-weight: 600; font-size: clamp(1.8rem, 5vw, 2.4rem); line-height: 1;
+    letter-spacing: -.035em; color: var(--ink);
+  }
+  .big .mer { font-size: .42em; font-weight: 400; letter-spacing: .06em; color: var(--muted); margin-left: 5px; }
+  .where { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1 1 auto; }
+  .l1 { font-size: 13.5px; font-weight: 500; }
+  .l1 .day { color: var(--brass); font-weight: 600; }
+  .l2 { font-family: var(--mono); font-size: 10.5px; color: var(--faint); }
+
+  .flag { font-size: 15px; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+
+  .warn {
+    display: none;
+    margin: 0 14px 13px; padding: 8px 10px;
+    background: var(--alert-soft); border-left: 2px solid var(--alert);
+    border-radius: 0 6px 6px 0; font-size: 11.5px; color: var(--ink);
+  }
+  .warn.on { display: block; }
+  .warn b { color: var(--alert); font-weight: 600; }
+
+  :focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+</head>
+<body>
+<div class="board">
+  <div class="ask">
+    <div class="field">
+      <label for="d">When it&rsquo;s</label>
+      <div class="pair">
+        <input type="date" id="d" aria-label="Date in Central time">
+        <input type="time" id="t" aria-label="Time in Central time">
+      </div>
+      <p class="src" id="src"></p>
+    </div>
+    <span class="arrow" aria-hidden="true">&rarr;</span>
+    <div class="field grow">
+      <label for="place">It will be in</label>
+      <div class="selwrap"><select id="place"></select></div>
+    </div>
+  </div>
+
+  <div class="answer">
+    <div class="big" id="big">&mdash;</div>
+    <div class="where">
+      <div class="l1" id="l1">Pick a city to convert</div>
+      <div class="l2" id="l2"></div>
+    </div>
+  </div>
+
+  <p class="warn" id="warn"></p>
+
+</div>
+
+<script>
+var ZONES=[["Africa/Abidjan","CI"],["Africa/Algiers","DZ"],["Africa/Bissau","GW"],["Africa/Cairo","EG"],["Africa/Casablanca","MA"],["Africa/Ceuta","ES"],["Africa/El_Aaiun","EH"],["Africa/Johannesburg","ZA"],["Africa/Juba","SS"],["Africa/Khartoum","SD"],["Africa/Lagos","NG"],["Africa/Maputo","MZ"],["Africa/Monrovia","LR"],["Africa/Nairobi","KE"],["Africa/Ndjamena","TD"],["Africa/Sao_Tome","ST"],["Africa/Tripoli","LY"],["Africa/Tunis","TN"],["Africa/Windhoek","NA"],["America/Adak","US"],["America/Anchorage","US"],["America/Araguaina","BR"],["America/Argentina/Buenos_Aires","AR"],["America/Argentina/Catamarca","AR"],["America/Argentina/Cordoba","AR"],["America/Argentina/Jujuy","AR"],["America/Argentina/La_Rioja","AR"],["America/Argentina/Mendoza","AR"],["America/Argentina/Rio_Gallegos","AR"],["America/Argentina/Salta","AR"],["America/Argentina/San_Juan","AR"],["America/Argentina/San_Luis","AR"],["America/Argentina/Tucuman","AR"],["America/Argentina/Ushuaia","AR"],["America/Asuncion","PY"],["America/Bahia","BR"],["America/Bahia_Banderas","MX"],["America/Barbados","BB"],["America/Belem","BR"],["America/Belize","BZ"],["America/Boa_Vista","BR"],["America/Bogota","CO"],["America/Boise","US"],["America/Cambridge_Bay","CA"],["America/Campo_Grande","BR"],["America/Cancun","MX"],["America/Caracas","VE"],["America/Cayenne","GF"],["America/Chicago","US"],["America/Chihuahua","MX"],["America/Ciudad_Juarez","MX"],["America/Costa_Rica","CR"],["America/Coyhaique","CL"],["America/Cuiaba","BR"],["America/Danmarkshavn","GL"],["America/Dawson","CA"],["America/Dawson_Creek","CA"],["America/Denver","US"],["America/Detroit","US"],["America/Edmonton","CA"],["America/Eirunepe","BR"],["America/El_Salvador","SV"],["America/Fort_Nelson","CA"],["America/Fortaleza","BR"],["America/Glace_Bay","CA"],["America/Goose_Bay","CA"],["America/Grand_Turk","TC"],["America/Guatemala","GT"],["America/Guayaquil","EC"],["America/Guyana","GY"],["America/Halifax","CA"],["America/Havana","CU"],["America/Hermosillo","MX"],["America/Indiana/Indianapolis","US"],["America/Indiana/Knox","US"],["America/Indiana/Marengo","US"],["America/Indiana/Petersburg","US"],["America/Indiana/Tell_City","US"],["America/Indiana/Vevay","US"],["America/Indiana/Vincennes","US"],["America/Indiana/Winamac","US"],["America/Inuvik","CA"],["America/Iqaluit","CA"],["America/Jamaica","JM"],["America/Juneau","US"],["America/Kentucky/Louisville","US"],["America/Kentucky/Monticello","US"],["America/La_Paz","BO"],["America/Lima","PE"],["America/Los_Angeles","US"],["America/Maceio","BR"],["America/Managua","NI"],["America/Manaus","BR"],["America/Martinique","MQ"],["America/Matamoros","MX"],["America/Mazatlan","MX"],["America/Menominee","US"],["America/Merida","MX"],["America/Metlakatla","US"],["America/Mexico_City","MX"],["America/Miquelon","PM"],["America/Moncton","CA"],["America/Monterrey","MX"],["America/Montevideo","UY"],["America/New_York","US"],["America/Nome","US"],["America/Noronha","BR"],["America/North_Dakota/Beulah","US"],["America/North_Dakota/Center","US"],["America/North_Dakota/New_Salem","US"],["America/Nuuk","GL"],["America/Ojinaga","MX"],["America/Panama","PA"],["America/Paramaribo","SR"],["America/Phoenix","US"],["America/Port-au-Prince","HT"],["America/Porto_Velho","BR"],["America/Puerto_Rico","PR"],["America/Punta_Arenas","CL"],["America/Rankin_Inlet","CA"],["America/Recife","BR"],["America/Regina","CA"],["America/Resolute","CA"],["America/Rio_Branco","BR"],["America/Santarem","BR"],["America/Santiago","CL"],["America/Santo_Domingo","DO"],["America/Sao_Paulo","BR"],["America/Scoresbysund","GL"],["America/Sitka","US"],["America/St_Johns","CA"],["America/Swift_Current","CA"],["America/Tegucigalpa","HN"],["America/Thule","GL"],["America/Tijuana","MX"],["America/Toronto","CA"],["America/Vancouver","CA"],["America/Whitehorse","CA"],["America/Winnipeg","CA"],["America/Yakutat","US"],["Antarctica/Casey","AQ"],["Antarctica/Davis","AQ"],["Antarctica/Macquarie","AU"],["Antarctica/Mawson","AQ"],["Antarctica/Palmer","AQ"],["Antarctica/Rothera","AQ"],["Antarctica/Troll","AQ"],["Antarctica/Vostok","AQ"],["Asia/Almaty","KZ"],["Asia/Amman","JO"],["Asia/Anadyr","RU"],["Asia/Aqtau","KZ"],["Asia/Aqtobe","KZ"],["Asia/Ashgabat","TM"],["Asia/Atyrau","KZ"],["Asia/Baghdad","IQ"],["Asia/Baku","AZ"],["Asia/Bangkok","TH"],["Asia/Barnaul","RU"],["Asia/Beirut","LB"],["Asia/Bishkek","KG"],["Asia/Chita","RU"],["Asia/Colombo","LK"],["Asia/Damascus","SY"],["Asia/Dhaka","BD"],["Asia/Dili","TL"],["Asia/Dubai","AE"],["Asia/Dushanbe","TJ"],["Asia/Famagusta","CY"],["Asia/Gaza","PS"],["Asia/Hebron","PS"],["Asia/Ho_Chi_Minh","VN"],["Asia/Hong_Kong","HK"],["Asia/Hovd","MN"],["Asia/Irkutsk","RU"],["Asia/Jakarta","ID"],["Asia/Jayapura","ID"],["Asia/Jerusalem","IL"],["Asia/Kabul","AF"],["Asia/Kamchatka","RU"],["Asia/Karachi","PK"],["Asia/Kathmandu","NP"],["Asia/Khandyga","RU"],["Asia/Kolkata","IN"],["Asia/Krasnoyarsk","RU"],["Asia/Kuching","MY"],["Asia/Macau","MO"],["Asia/Magadan","RU"],["Asia/Makassar","ID"],["Asia/Manila","PH"],["Asia/Nicosia","CY"],["Asia/Novokuznetsk","RU"],["Asia/Novosibirsk","RU"],["Asia/Omsk","RU"],["Asia/Oral","KZ"],["Asia/Pontianak","ID"],["Asia/Pyongyang","KP"],["Asia/Qatar","QA"],["Asia/Qostanay","KZ"],["Asia/Qyzylorda","KZ"],["Asia/Riyadh","SA"],["Asia/Sakhalin","RU"],["Asia/Samarkand","UZ"],["Asia/Seoul","KR"],["Asia/Shanghai","CN"],["Asia/Singapore","SG"],["Asia/Srednekolymsk","RU"],["Asia/Taipei","TW"],["Asia/Tashkent","UZ"],["Asia/Tbilisi","GE"],["Asia/Tehran","IR"],["Asia/Thimphu","BT"],["Asia/Tokyo","JP"],["Asia/Tomsk","RU"],["Asia/Ulaanbaatar","MN"],["Asia/Urumqi","CN"],["Asia/Ust-Nera","RU"],["Asia/Vladivostok","RU"],["Asia/Yakutsk","RU"],["Asia/Yangon","MM"],["Asia/Yekaterinburg","RU"],["Asia/Yerevan","AM"],["Atlantic/Azores","PT"],["Atlantic/Bermuda","BM"],["Atlantic/Canary","ES"],["Atlantic/Cape_Verde","CV"],["Atlantic/Faroe","FO"],["Atlantic/Madeira","PT"],["Atlantic/South_Georgia","GS"],["Atlantic/Stanley","FK"],["Australia/Adelaide","AU"],["Australia/Brisbane","AU"],["Australia/Broken_Hill","AU"],["Australia/Darwin","AU"],["Australia/Eucla","AU"],["Australia/Hobart","AU"],["Australia/Lindeman","AU"],["Australia/Lord_Howe","AU"],["Australia/Melbourne","AU"],["Australia/Perth","AU"],["Australia/Sydney","AU"],["Europe/Andorra","AD"],["Europe/Astrakhan","RU"],["Europe/Athens","GR"],["Europe/Belgrade","RS"],["Europe/Berlin","DE"],["Europe/Brussels","BE"],["Europe/Bucharest","RO"],["Europe/Budapest","HU"],["Europe/Chisinau","MD"],["Europe/Dublin","IE"],["Europe/Gibraltar","GI"],["Europe/Helsinki","FI"],["Europe/Istanbul","TR"],["Europe/Kaliningrad","RU"],["Europe/Kirov","RU"],["Europe/Kyiv","UA"],["Europe/Lisbon","PT"],["Europe/London","GB"],["Europe/Madrid","ES"],["Europe/Malta","MT"],["Europe/Minsk","BY"],["Europe/Moscow","RU"],["Europe/Paris","FR"],["Europe/Prague","CZ"],["Europe/Riga","LV"],["Europe/Rome","IT"],["Europe/Samara","RU"],["Europe/Saratov","RU"],["Europe/Simferopol","RU"],["Europe/Sofia","BG"],["Europe/Tallinn","EE"],["Europe/Tirane","AL"],["Europe/Ulyanovsk","RU"],["Europe/Vienna","AT"],["Europe/Vilnius","LT"],["Europe/Volgograd","RU"],["Europe/Warsaw","PL"],["Europe/Zurich","CH"],["Indian/Chagos","IO"],["Indian/Maldives","MV"],["Indian/Mauritius","MU"],["Pacific/Apia","WS"],["Pacific/Auckland","NZ"],["Pacific/Bougainville","PG"],["Pacific/Chatham","NZ"],["Pacific/Easter","CL"],["Pacific/Efate","VU"],["Pacific/Fakaofo","TK"],["Pacific/Fiji","FJ"],["Pacific/Galapagos","EC"],["Pacific/Gambier","PF"],["Pacific/Guadalcanal","SB"],["Pacific/Guam","GU"],["Pacific/Honolulu","US"],["Pacific/Kanton","KI"],["Pacific/Kiritimati","KI"],["Pacific/Kosrae","FM"],["Pacific/Kwajalein","MH"],["Pacific/Marquesas","PF"],["Pacific/Nauru","NR"],["Pacific/Niue","NU"],["Pacific/Norfolk","NF"],["Pacific/Noumea","NC"],["Pacific/Pago_Pago","AS"],["Pacific/Palau","PW"],["Pacific/Pitcairn","PN"],["Pacific/Port_Moresby","PG"],["Pacific/Rarotonga","CK"],["Pacific/Tahiti","PF"],["Pacific/Tarawa","KI"],["Pacific/Tongatapu","TO"]];
+// ---- zone maths, shared by the widget and the test harness ----
+
+function partsIn(tz, when) {
+  var f = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz, hourCycle: 'h23',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', weekday: 'short'
+  });
+  var o = {};
+  f.formatToParts(when).forEach(function (p) { o[p.type] = p.value; });
+  return { y: +o.year, mo: +o.month, d: +o.day, h: +o.hour, mi: +o.minute, s: +o.second, wd: o.weekday };
+}
+
+function offsetMin(tz, when) {
+  var p = partsIn(tz, when);
+  return Math.round((Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi, p.s) - Math.floor(when.getTime() / 1000) * 1000) / 60000);
+}
+
+// Wall-clock time in `tz` -> instant. Reports gaps and ambiguity honestly.
+// status: 'ok' | 'gap' (clocks skipped this time) | 'ambiguous' (it happened twice)
+function resolveWallClock(tz, y, mo, d, h, mi) {
+  var naive = Date.UTC(y, mo - 1, d, h, mi, 0);
+
+  // Two candidate offsets: probe well before and well after the wall time.
+  var offBefore = offsetMin(tz, new Date(naive - 86400000));
+  var offAfter  = offsetMin(tz, new Date(naive + 86400000));
+
+  var seen = [], hits = [];
+  [offBefore, offAfter].forEach(function (off) {
+    if (seen.indexOf(off) >= 0) { return; }
+    seen.push(off);
+    var ts = naive - off * 60000;
+    var back = partsIn(tz, new Date(ts));
+    if (back.y === y && back.mo === mo && back.d === d && back.h === h && back.mi === mi) {
+      hits.push({ ts: ts, off: off });
+    }
+  });
+
+  if (hits.length === 0) {
+    // Spring-forward gap: nothing maps back. Report the instant clocks jump to.
+    var jumpTo = naive - Math.max(offBefore, offAfter) * 60000;
+    return { status: 'gap', ts: jumpTo, skipped: Math.abs(offAfter - offBefore) };
+  }
+  hits.sort(function (a, b) { return a.ts - b.ts; });
+  return {
+    status: hits.length > 1 ? 'ambiguous' : 'ok',
+    ts: hits[0].ts,                  // the earlier of the two, i.e. before the clocks go back
+    alt: hits.length > 1 ? hits[1].ts : null
+  };
+}
+
+function zoneAbbr(tz, when, style) {
+  var p = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: style || 'short' })
+    .formatToParts(when).filter(function (x) { return x.type === 'timeZoneName'; });
+  var v = p.length ? p[0].value : '';
+  // "GMT+5:30" just repeats the UTC offset we already print
+  return /^(GMT|UTC)([+\u2212-]|$)/.test(v) ? '' : v;
+}
+
+function utcLabel(mins) {
+  var s = mins < 0 ? '−' : '+', a = Math.abs(mins);
+  var h = Math.floor(a / 60), m = a % 60;
+  return 'UTC' + s + h + (m ? ':' + (m < 10 ? '0' : '') + m : '');
+}
+
+function relLabel(mins) {
+  if (mins === 0) { return 'same clock time'; }
+  var a = Math.abs(mins), h = Math.floor(a / 60), m = a % 60;
+  var t = h + (m ? ':' + (m < 10 ? '0' : '') + m : '') + (h === 1 && !m ? ' hour' : ' hours');
+  return t + (mins > 0 ? ' ahead' : ' behind');
+}
+
+
+(function () {
+  'use strict';
+
+  var HOME = 'America/Chicago';
+  var DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  var dEl = document.getElementById('d'), tEl = document.getElementById('t');
+  var placeEl = document.getElementById('place');
+  var bigEl = document.getElementById('big'), l1El = document.getElementById('l1');
+  var l2El = document.getElementById('l2'), warnEl = document.getElementById('warn');
+  var srcEl = document.getElementById('src');
+
+  /* ---------- build the picker from the IANA zone table ---------- */
+
+  var regionName = (function () {
+    try {
+      var dn = new Intl.DisplayNames(['en'], { type: 'region' });
+      return function (cc) { try { return dn.of(cc) || cc; } catch (e) { return cc; } };
+    } catch (e) { return function (cc) { return cc; }; }
+  })();
+
+  function cityOf(zone) {
+    var seg = zone.split('/');
+    return seg[seg.length - 1].replace(/_/g, ' ');
+  }
+
+  function flagOf(cc) {
+    if (!/^[A-Z]{2}$/.test(cc)) { return ''; }
+    return String.fromCodePoint(0x1F1E6 + cc.charCodeAt(0) - 65, 0x1F1E6 + cc.charCodeAt(1) - 65);
+  }
+
+  // Region groups: IANA prefixes, merged into things people actually think in.
+  var GROUPS = [
+    ['Americas',                ['America']],
+    ['Europe',                  ['Europe', 'Arctic']],
+    ['Africa',                  ['Africa']],
+    ['Asia',                    ['Asia']],
+    ['Australia & Pacific',     ['Australia', 'Pacific']],
+    ['Atlantic & Indian Ocean', ['Atlantic', 'Indian']],
+    ['Antarctica',              ['Antarctica']]
+  ];
+
+  // The five he actually watches, named the way he names them.
+  var FREQUENT = [
+    ['Europe/London', 'London'],
+    ['Asia/Tashkent', 'Tashkent'],
+    ['Asia/Kolkata', 'Kerala (Kolkata)'],
+    ['Asia/Singapore', 'Singapore'],
+    ['Pacific/Auckland', 'Dunedin (Auckland)']
+  ];
+
+  var byZone = {};
+  ZONES.forEach(function (row) {
+    var zone = row[0], cc = row[1];
+    byZone[zone] = { cc: cc, city: cityOf(zone), country: regionName(cc),
+                     label: cityOf(zone) + ', ' + regionName(cc) };
+  });
+
+  function addOption(parent, zone, text) {
+    var o = document.createElement('option');
+    o.value = zone;
+    o.textContent = text;
+    parent.appendChild(o);
+  }
+
+  var gFreq = document.createElement('optgroup');
+  gFreq.label = 'Your places';
+  FREQUENT.forEach(function (f) { if (byZone[f[0]]) { addOption(gFreq, f[0], f[1]); } });
+  placeEl.appendChild(gFreq);
+
+  GROUPS.forEach(function (g) {
+    var name = g[0], prefixes = g[1];
+    var rows = Object.keys(byZone).filter(function (z) {
+      return prefixes.indexOf(z.split('/')[0]) >= 0;
+    }).map(function (z) { return { zone: z, c: byZone[z].country, city: byZone[z].city }; });
+    if (!rows.length) { return; }
+
+    // country first so a country's cities sit together and type-ahead lands on the country
+    rows.sort(function (a, b) {
+      return a.c.localeCompare(b.c) || a.city.localeCompare(b.city);
+    });
+
+    var grp = document.createElement('optgroup');
+    grp.label = name;
+    rows.forEach(function (r) {
+      var only = rows.filter(function (x) { return x.c === r.c; }).length === 1;
+      addOption(grp, r.zone, only ? r.c : r.c + ' — ' + r.city);
+    });
+    placeEl.appendChild(grp);
+  });
+
+  /* ---------- formatting ---------- */
+
+  function clock(p) {
+    var h = p.h % 12; if (h === 0) { h = 12; }
+    return h + ':' + (p.mi < 10 ? '0' : '') + p.mi +
+      '<span class="mer">' + (p.h < 12 ? 'AM' : 'PM') + '</span>';
+  }
+
+  function stamp(p) { return p.wd + ', ' + MONTHS[p.mo - 1] + ' ' + p.d; }
+
+  function dayShift(a, b) {
+    var da = Date.UTC(a.y, a.mo - 1, a.d), db = Date.UTC(b.y, b.mo - 1, b.d);
+    var n = Math.round((db - da) / 86400000);
+    if (n === 0) { return ''; }
+    if (n === 1) { return 'next day'; }
+    if (n === -1) { return 'previous day'; }
+    return (n > 0 ? '+' : '') + n + ' days';
+  }
+
+  function setWarn(html) {
+    warnEl.innerHTML = html || '';
+    warnEl.className = html ? 'warn on' : 'warn';
+  }
+
+  /* ---------- the conversion ---------- */
+
+  function convert() {
+    var dv = dEl.value, tv = tEl.value;
+    var tz = byZone[placeEl.value] ? placeEl.value : null;
+
+    if (!dv || !tv) { bigEl.innerHTML = '&mdash;'; l1El.textContent = 'Enter a date and time'; l2El.textContent = ''; srcEl.textContent = ''; setWarn(''); return; }
+    if (!tz) {
+      bigEl.innerHTML = '&mdash;';
+      l1El.textContent = 'Pick a place to convert';
+      l2El.textContent = ''; srcEl.textContent = ''; setWarn(''); return;
+    }
+
+    var dp = dv.split('-'), tp = tv.split(':');
+    var y = +dp[0], mo = +dp[1], d = +dp[2], h = +tp[0], mi = +tp[1];
+
+    var r = resolveWallClock(HOME, y, mo, d, h, mi);
+    var when = new Date(r.ts);
+
+    var src = partsIn(HOME, when);
+    var dst = partsIn(tz, when);
+    var info = byZone[tz];
+    var rel = offsetMin(tz, when) - offsetMin(HOME, when);
+
+    bigEl.innerHTML = clock(dst);
+
+    var shift = dayShift(src, dst);
+    l1El.innerHTML = '<span class="flag">' + flagOf(info.cc) + '</span> ' + info.label +
+      ' &middot; ' + stamp(dst) + (shift ? ' <span class="day">' + shift + '</span>' : '');
+
+    l2El.textContent = [
+      zoneAbbr(tz, when, 'long'),
+      utcLabel(offsetMin(tz, when)),
+      relLabel(rel) + ' of Central'
+    ].filter(Boolean).join('  ·  ');
+
+    // spell out how the Central input was read, so CST vs CDT is never a guess
+    srcEl.textContent = clockPlain(src.h, src.mi) + ' ' +
+      (zoneAbbr(HOME, when) || utcLabel(offsetMin(HOME, when))) + ' · ' + stamp(src);
+
+    // Honest reporting when the Central time itself is odd
+    if (r.status === 'gap') {
+      setWarn('<b>That time doesn’t exist.</b>&nbsp;Central clocks jump forward ' +
+        (r.skipped / 60) + ' hour' + (r.skipped === 60 ? '' : 's') + ' on ' + stamp(src) +
+        ', so ' + clockPlain(h, mi) + ' is skipped. Showing ' + clockPlain(src.h, src.mi) +
+        ' ' + zoneAbbr(HOME, when) + ' instead.');
+    } else if (r.status === 'ambiguous') {
+      var alt = new Date(r.alt);
+      var ap = partsIn(tz, alt);
+      setWarn('<b>That time happens twice.</b>&nbsp;Central clocks fall back on ' + stamp(src) +
+        '. Showing the first pass (' + zoneAbbr(HOME, when) + '); the second would be ' +
+        clockPlain(ap.h, ap.mi) + ' there.');
+    } else {
+      setWarn('');
+    }
+  }
+
+  function clockPlain(h, mi) {
+    var x = h % 12; if (x === 0) { x = 12; }
+    return x + ':' + (mi < 10 ? '0' : '') + mi + ' ' + (h < 12 ? 'AM' : 'PM');
+  }
+
+  /* ---------- wiring ---------- */
+
+  [dEl, tEl].forEach(function (el) { el.addEventListener('input', convert); });
+  placeEl.addEventListener('change', convert);
+
+  // start on today's date in Central, at the next half hour
+  var now = partsIn(HOME, new Date());
+  dEl.value = now.y + '-' + (now.mo < 10 ? '0' : '') + now.mo + '-' + (now.d < 10 ? '0' : '') + now.d;
+  var mins = now.h * 60 + now.mi, next = Math.ceil(mins / 30) * 30;
+  if (next >= 1440) { next = 1380; }
+  tEl.value = (Math.floor(next / 60) < 10 ? '0' : '') + Math.floor(next / 60) + ':' + (next % 60 < 10 ? '0' : '') + (next % 60);
+  placeEl.value = 'Europe/London';
+  convert();
+})();
+
+</script>
+
+</body>
+</html>

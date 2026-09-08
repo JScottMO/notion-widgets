@@ -150,6 +150,592 @@ select:focus { border-color: var(--brass); }
   .row .tag { display: none; }
   .cell { min-height: 48px; }
 }
+
+/* ---- wikipedia links ---- */
+a.wl {
+  color: inherit; text-decoration: none;
+  border-bottom: 1px dotted currentColor;
+  transition: border-color .12s ease, color .12s ease;
+}
+a.wl:hover { border-bottom-style: solid; }
+.hn a.wl, .on a.wl { border-bottom-color: transparent; }
+.hn a.wl:hover { border-bottom-color: currentColor; border-bottom-style: solid; }
+.on a.wl:hover { border-bottom-color: currentColor; border-bottom-style: solid; }
+.row .n a.wl:hover { color: var(--brass); }
+a.wl:focus-visible { outline: 2px solid var(--brass); outline-offset: 1px; border-radius: 2px; }
+</style>
+
+</head>
+<body>
+<div class="board">
+  <div class="ctl">
+    <div class="selwrap"><select id="city" aria-label="City"></select></div>
+    <div class="seg" role="group" aria-label="View">
+      <button id="mBtn" type="button" aria-pressed="true">Month</button>
+      <button id="wBtn" type="button" aria-pressed="false">Week</button>
+    </div>
+    <span class="spacer"></span>
+    <div class="nav">
+      <button id="prev" type="button" aria-label="Previous">&lsaquo;</button>
+      <button id="next" type="button" aria-label="Next">&rsaquo;</button>
+    </div>
+    <div class="selwrap"><select id="mon" aria-label="Month"></select></div>
+    <div class="selwrap"><select id="yr" aria-label="Year"></select></div>
+    <button class="today" id="todayBtn" type="button">Today</button>
+  </div>
+
+  <div class="wrap" id="wrap">
+    <div class="dows" id="dows" aria-hidden="true"></div>
+    <div class="cal" id="cal"></div>
+  </div>
+
+  <div class="list" id="list"></div>
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+/* ---------------- holiday engine ----------------
+   Everything here is computed, never fetched. Rules only — no lunar dates.   */
+
+function iso(y, m, d) {
+  return y + '-' + (m < 10 ? '0' : '') + m + '-' + (d < 10 ? '0' : '') + d;
+}
+function ymdOf(dt) { return iso(dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate()); }
+function mkUTC(y, m, d) { return new Date(Date.UTC(y, m - 1, d)); }
+function addDays(dt, n) { return new Date(dt.getTime() + n * 86400000); }
+function dow(dt) { return dt.getUTCDay(); }                 // 0 Sun … 6 Sat
+
+// Anonymous Gregorian computus
+function easter(y) {
+  var a = y % 19, b = Math.floor(y / 100), c = y % 100;
+  var d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  var g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  var i = Math.floor(c / 4), k = c % 4;
+  var l = (32 + 2 * e + 2 * i - h - k) % 7;
+  var m = Math.floor((a + 11 * h + 22 * l) / 451);
+  var mo = Math.floor((h + l - 7 * m + 114) / 31);
+  var da = ((h + l - 7 * m + 114) % 31) + 1;
+  return mkUTC(y, mo, da);
+}
+
+function nthWeekday(y, month, weekday, n) {
+  if (n > 0) {
+    var first = mkUTC(y, month, 1);
+    var shift = (weekday - dow(first) + 7) % 7;
+    return addDays(first, shift + (n - 1) * 7);
+  }
+  var last = mkUTC(y, month + 1, 0);                        // day 0 of next month
+  return addDays(last, -((dow(last) - weekday + 7) % 7));
+}
+
+/* --- rule constructors: each returns Date given a year --- */
+var R = {
+  fixed: function (m, d) { return function (y) { return mkUTC(y, m, d); }; },
+  nth:   function (m, wd, n) { return function (y) { return nthWeekday(y, m, wd, n); }; },
+  easter: function (off) { return function (y) { return addDays(easter(y), off); }; },
+  // first Tuesday after the first Monday in November
+  usElection: function () {
+    return function (y) { return addDays(nthWeekday(y, 11, 1, 1), 1); };
+  }
+};
+
+/* --- weekend policies --- */
+// US federal: Saturday observed Friday, Sunday observed Monday
+function usObserved(dt) {
+  var w = dow(dt);
+  if (w === 6) { return addDays(dt, -1); }
+  if (w === 0) { return addDays(dt, 1); }
+  return dt;
+}
+// UK: bump to the next weekday not already taken by another bank holiday
+function ukSubstitute(list) {
+  var taken = {};
+  list.forEach(function (h) {
+    var dt = h.dt;
+    while (dow(dt) === 0 || dow(dt) === 6 || taken[ymdOf(dt)]) { dt = addDays(dt, 1); }
+    h.dt = dt; taken[ymdOf(dt)] = true;
+  });
+  return list;
+}
+// Singapore: a public holiday on Sunday is observed the following Monday
+function sgObserved(dt) { return dow(dt) === 0 ? addDays(dt, 1) : dt; }
+
+/* --- the six countries ---
+   Each holiday carries an explicit Wikipedia search term. Names like
+   "Public Holiday" or "Day after Thanksgiving" have no article of their own,
+   so they point at the article that actually covers them.                    */
+var COUNTRIES = {
+  US: {
+    name: 'United States', flag: '🇺🇸', complete: true,
+    source: 'US federal holidays (5 U.S.C. 6103), with weekend observance',
+    build: function (y) {
+      var out = [];
+      function pub(rule, name, w) { out.push({ dt: usObserved(rule(y)), name: name, type: 'public', w: w || name }); }
+      function obs(rule, name, w) { out.push({ dt: rule(y), name: name, type: 'observance', w: w || name }); }
+      pub(R.fixed(1, 1), 'New Year’s Day', 'New Year’s Day');
+      pub(R.nth(1, 1, 3), 'Martin Luther King Jr. Day');
+      pub(R.nth(2, 1, 3), 'Presidents’ Day', 'Washington’s Birthday');
+      pub(R.nth(5, 1, -1), 'Memorial Day');
+      pub(R.fixed(6, 19), 'Juneteenth');
+      pub(R.fixed(7, 4), 'Independence Day', 'Independence Day (United States)');
+      pub(R.nth(9, 1, 1), 'Labor Day');
+      pub(R.nth(10, 1, 2), 'Columbus Day');
+      pub(R.fixed(11, 11), 'Veterans Day');
+      pub(R.nth(11, 4, 4), 'Thanksgiving', 'Thanksgiving (United States)');
+      pub(R.fixed(12, 25), 'Christmas Day', 'Christmas');
+      obs(R.fixed(2, 14), 'Valentine’s Day');
+      obs(R.fixed(3, 17), 'St Patrick’s Day', 'Saint Patrick’s Day');
+      obs(R.easter(0), 'Easter Sunday', 'Easter');
+      obs(R.nth(5, 0, 2), 'Mother’s Day');
+      obs(R.nth(6, 0, 3), 'Father’s Day');
+      obs(R.usElection(), 'Election Day', 'Election Day (United States)');
+      obs(function (yy) { return addDays(nthWeekday(yy, 11, 4, 4), 1); }, 'Day after Thanksgiving', 'Black Friday (shopping)');
+      obs(R.fixed(10, 31), 'Halloween');
+      obs(R.fixed(12, 31), 'New Year’s Eve');
+      return out;
+    }
+  },
+
+  GB: {
+    name: 'United Kingdom', flag: '🇬🇧', complete: true,
+    source: 'England & Wales bank holidays, with substitute-day rules',
+    build: function (y) {
+      var UKBH = 'Public holidays in the United Kingdom';
+      var pubs = [
+        { dt: mkUTC(y, 1, 1), name: 'New Year’s Day', type: 'public', w: 'New Year’s Day' },
+        { dt: addDays(easter(y), -2), name: 'Good Friday', type: 'public', w: 'Good Friday' },
+        { dt: addDays(easter(y), 1), name: 'Easter Monday', type: 'public', w: 'Easter Monday' },
+        { dt: nthWeekday(y, 5, 1, 1), name: 'Early May bank holiday', type: 'public', w: UKBH },
+        { dt: nthWeekday(y, 5, 1, -1), name: 'Spring bank holiday', type: 'public', w: UKBH },
+        { dt: nthWeekday(y, 8, 1, -1), name: 'Summer bank holiday', type: 'public', w: UKBH },
+        { dt: mkUTC(y, 12, 25), name: 'Christmas Day', type: 'public', w: 'Christmas' },
+        { dt: mkUTC(y, 12, 26), name: 'Boxing Day', type: 'public', w: 'Boxing Day' }
+      ];
+      ukSubstitute(pubs);
+      var out = pubs.slice();
+      function obs(dt, name, w) { out.push({ dt: dt, name: name, type: 'observance', w: w || name }); }
+      obs(mkUTC(y, 2, 14), 'Valentine’s Day');
+      obs(addDays(easter(y), -21), 'Mothering Sunday');
+      obs(mkUTC(y, 3, 17), 'St Patrick’s Day', 'Saint Patrick’s Day');
+      obs(easter(y), 'Easter Sunday', 'Easter');
+      obs(nthWeekday(y, 6, 0, 3), 'Father’s Day');
+      obs(mkUTC(y, 10, 31), 'Hallowe’en', 'Halloween');
+      obs(mkUTC(y, 11, 5), 'Bonfire Night', 'Guy Fawkes Night');
+      obs(nthWeekday(y, 11, 0, 2), 'Remembrance Sunday');
+      obs(mkUTC(y, 12, 31), 'New Year’s Eve');
+      return out;
+    }
+  },
+
+  BW: {
+    name: 'Botswana', flag: '🇧🇼', complete: true,
+    source: 'gov.bw published public holidays',
+    build: function (y) {
+      var BWPH = 'Public holidays in Botswana';
+      var out = [];
+      function pub(dt, name, w) { out.push({ dt: dt, name: name, type: 'public', w: w || name }); }
+      pub(mkUTC(y, 1, 1), 'New Year’s Day');
+      pub(mkUTC(y, 1, 2), 'Public Holiday', BWPH);
+      pub(addDays(easter(y), -2), 'Good Friday');
+      pub(addDays(easter(y), -1), 'Holy Saturday');
+      pub(addDays(easter(y), 1), 'Easter Monday');
+      pub(mkUTC(y, 5, 1), 'Labour Day', 'International Workers’ Day');
+      pub(addDays(easter(y), 39), 'Ascension Day', 'Feast of the Ascension');
+      pub(mkUTC(y, 6, 16), 'Day of the African Child', 'International Day of the African Child');
+      pub(mkUTC(y, 7, 1), 'Sir Seretse Khama Day', 'Seretse Khama');
+      pub(nthWeekday(y, 7, 1, 3), 'President’s Day', 'Presidents’ Day (Botswana)');
+      pub(addDays(nthWeekday(y, 7, 1, 3), 1), 'Public Holiday', BWPH);
+      pub(mkUTC(y, 9, 30), 'Botswana Day', 'Botswana Day');
+      pub(mkUTC(y, 12, 25), 'Christmas Day', 'Christmas');
+      pub(mkUTC(y, 12, 26), 'Boxing Day');
+      out.push({ dt: easter(y), name: 'Easter Sunday', type: 'observance', w: 'Easter' });
+      return out;
+    }
+  },
+
+  UZ: {
+    name: 'Uzbekistan', flag: '🇺🇿', complete: false,
+    missing: 'Ramazon Hayit and Qurbon Hayit follow the Islamic lunar calendar and are not shown.',
+    source: 'Fixed national holidays',
+    build: function (y) {
+      var UZPH = 'Public holidays in Uzbekistan';
+      var out = [];
+      function pub(m, d, name, w) { out.push({ dt: mkUTC(y, m, d), name: name, type: 'public', w: w || name }); }
+      pub(1, 1, 'New Year’s Day');
+      pub(3, 8, 'International Women’s Day');
+      pub(3, 21, 'Navruz', 'Nowruz');
+      pub(5, 9, 'Day of Remembrance and Honour', UZPH);
+      pub(9, 1, 'Independence Day', 'Independence Day (Uzbekistan)');
+      pub(10, 1, 'Teachers’ Day');
+      pub(12, 8, 'Constitution Day', UZPH);
+      return out;
+    }
+  },
+
+  IN: {
+    name: 'India', flag: '🇮🇳', complete: false,
+    missing: 'Diwali, Holi, Eid, Onam and other lunar or regional Kerala holidays are not shown.',
+    source: 'Fixed gazetted national holidays',
+    build: function (y) {
+      var out = [];
+      function pub(dt, name, w) { out.push({ dt: dt, name: name, type: 'public', w: w || name }); }
+      pub(mkUTC(y, 1, 26), 'Republic Day', 'Republic Day (India)');
+      pub(addDays(easter(y), -2), 'Good Friday');
+      pub(mkUTC(y, 8, 15), 'Independence Day', 'Independence Day (India)');
+      pub(mkUTC(y, 10, 2), 'Gandhi Jayanti');
+      pub(mkUTC(y, 12, 25), 'Christmas Day', 'Christmas');
+      return out;
+    }
+  },
+
+  SG: {
+    name: 'Singapore', flag: '🇸🇬', complete: false,
+    missing: 'Chinese New Year, Hari Raya Puasa, Hari Raya Haji, Vesak Day and Deepavali are not shown.',
+    source: 'Fixed public holidays, with Sunday observance',
+    build: function (y) {
+      var out = [];
+      function pub(dt, name, w) { out.push({ dt: sgObserved(dt), name: name, type: 'public', w: w || name }); }
+      pub(mkUTC(y, 1, 1), 'New Year’s Day');
+      out.push({ dt: addDays(easter(y), -2), name: 'Good Friday', type: 'public', w: 'Good Friday' });
+      pub(mkUTC(y, 5, 1), 'Labour Day', 'International Workers’ Day');
+      pub(mkUTC(y, 8, 9), 'National Day', 'National Day (Singapore)');
+      pub(mkUTC(y, 12, 25), 'Christmas Day', 'Christmas');
+      return out;
+    }
+  }
+};
+
+// Wikipedia's "go" search resolves to the article when the title matches or
+// redirects, and to search results otherwise — so a link is never a dead end.
+function wikiUrl(term) {
+  return 'https://en.wikipedia.org/wiki/Special:Search?go=Go&search=' + encodeURIComponent(term);
+}
+
+// city -> country, matching the clock strip
+var CITIES = [
+  { key: 'US', city: 'Columbia',  tz: 'America/Chicago' },
+  { key: 'GB', city: 'London',    tz: 'Europe/London' },
+  { key: 'BW', city: 'Gaborone',  tz: 'Africa/Gaborone' },
+  { key: 'UZ', city: 'Tashkent',  tz: 'Asia/Tashkent' },
+  { key: 'IN', city: 'Kerala',    tz: 'Asia/Kolkata' },
+  { key: 'SG', city: 'Singapore', tz: 'Asia/Singapore' }
+];
+
+var _cache = {};
+function holidaysFor(key, year) {
+  var ck = key + ':' + year;
+  if (_cache[ck]) { return _cache[ck]; }
+  var map = {};
+  COUNTRIES[key].build(year).forEach(function (h) {
+    var k = ymdOf(h.dt);
+    if (!map[k]) { map[k] = []; }
+    // a public holiday wins the cell styling over an observance on the same day
+    map[k].push({ name: h.name, type: h.type, w: h.w || h.name });
+    map[k].sort(function (a, b) { return (a.type === 'public' ? 0 : 1) - (b.type === 'public' ? 0 : 1); });
+  });
+  _cache[ck] = map;
+  return map;
+}
+
+(function () {
+  'use strict';
+
+  var MIN_YEAR = 2021, MAX_YEAR = 2035;   // Juneteenth exists from 2021; rules stable through 2035
+  var MONTHS = ['January','February','March','April','May','June',
+                'July','August','September','October','November','December'];
+  var DOWS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  var cityEl = document.getElementById('city');
+  var monEl = document.getElementById('mon'), yrEl = document.getElementById('yr');
+  var prevEl = document.getElementById('prev'), nextEl = document.getElementById('next');
+  var todayEl = document.getElementById('todayBtn');
+  var mBtn = document.getElementById('mBtn'), wBtn = document.getElementById('wBtn');
+  var dowsEl = document.getElementById('dows'), calEl = document.getElementById('cal');
+  var wrapEl = document.getElementById('wrap');
+  var listEl = document.getElementById('list'), footEl = document.getElementById('foot');
+
+  var mode = 'month';
+  var cursor;                                   // a UTC Date: the anchor day of the period
+
+  /* ---- today, in the selected city's own timezone ---- */
+  function todayIn(tz) {
+    var f = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit'
+    });
+    var o = {};
+    f.formatToParts(new Date()).forEach(function (p) { o[p.type] = p.value; });
+    return mkUTC(+o.year, +o.month, +o.day);
+  }
+  function current() { return CITIES[cityEl.selectedIndex]; }
+
+  CITIES.forEach(function (c) {
+    var o = document.createElement('option');
+    o.value = c.key;
+    o.textContent = COUNTRIES[c.key].flag + '  ' + c.city + ' — ' + COUNTRIES[c.key].name;
+    cityEl.appendChild(o);
+  });
+  MONTHS.forEach(function (m, i) {
+    var o = document.createElement('option'); o.value = i + 1; o.textContent = m; monEl.appendChild(o);
+  });
+  for (var y = MIN_YEAR; y <= MAX_YEAR; y++) {
+    var o = document.createElement('option'); o.value = y; o.textContent = y; yrEl.appendChild(o);
+  }
+  DOWS.forEach(function (d) {
+    var s = document.createElement('span'); s.textContent = d; dowsEl.appendChild(s);
+  });
+
+  function inRange(dt) {
+    var y = dt.getUTCFullYear();
+    return y >= MIN_YEAR && y <= MAX_YEAR;
+  }
+
+  function clamp(dt) {
+    if (dt.getUTCFullYear() < MIN_YEAR) { return mkUTC(MIN_YEAR, 1, 1); }
+    if (dt.getUTCFullYear() > MAX_YEAR) { return mkUTC(MAX_YEAR, 12, 31); }
+    return dt;
+  }
+
+  /* ---- the days on screen ---- */
+  function periodDays() {
+    if (mode === 'week') {
+      var start = addDays(cursor, -dow(cursor));
+      return { days: Array.from({ length: 7 }, function (_, i) { return addDays(start, i); }),
+               start: start, end: addDays(start, 6) };
+    }
+    var y = cursor.getUTCFullYear(), m = cursor.getUTCMonth() + 1;
+    var first = mkUTC(y, m, 1), gridStart = addDays(first, -dow(first));
+    var last = mkUTC(y, m + 1, 0);
+    var cells = Math.ceil((dow(first) + last.getUTCDate()) / 7) * 7;
+    return { days: Array.from({ length: cells }, function (_, i) { return addDays(gridStart, i); }),
+             start: first, end: last };
+  }
+
+  function render() {
+    var c = current(), meta = COUNTRIES[c.key];
+    var today = todayIn(c.tz), todayKey = ymdOf(today);
+    var p = periodDays();
+    var thisMonth = cursor.getUTCMonth();
+
+    monEl.value = cursor.getUTCMonth() + 1;
+    yrEl.value = cursor.getUTCFullYear();
+    prevEl.disabled = !inRange(step(-1));
+    nextEl.disabled = !inRange(step(1));
+    wrapEl.className = mode === 'week' ? 'wrap week' : 'wrap';
+
+    // holidays for every year the period touches
+    var maps = {};
+    p.days.forEach(function (d) {
+      var yy = d.getUTCFullYear();
+      if (!maps[yy]) { maps[yy] = holidaysFor(c.key, yy); }
+    });
+
+    calEl.innerHTML = '';
+    p.days.forEach(function (d) {
+      var key = ymdOf(d), hits = maps[d.getUTCFullYear()][key] || [];
+      var pub = hits.filter(function (h) { return h.type === 'public'; });
+      var obs = hits.filter(function (h) { return h.type === 'observance'; });
+
+      var el = document.createElement('div');
+      var cls = ['cell'];
+      if (mode === 'month' && d.getUTCMonth() !== thisMonth) { cls.push('out'); }
+      if (dow(d) === 0 || dow(d) === 6) { cls.push('we'); }
+      if (pub.length) { cls.push('hol'); }
+      if (key === todayKey) { cls.push('today'); }
+      el.className = cls.join(' ');
+
+      var html = '<div class="num">' + d.getUTCDate() + '</div>';
+      if (pub.length) { html += '<div class="hn">' + pub.map(link).join('<br>') + '</div>'; }
+      if (obs.length) { html += '<div class="on">' + obs.map(link).join('<br>') + '</div>'; }
+      el.innerHTML = html;
+      if (key === todayKey) { el.setAttribute('aria-current', 'date'); }
+      calEl.appendChild(el);
+    });
+
+    /* ---- the list for this period ---- */
+    var rows = [];
+    p.days.forEach(function (d) {
+      if (mode === 'month' && d.getUTCMonth() !== thisMonth) { return; }
+      (maps[d.getUTCFullYear()][ymdOf(d)] || []).forEach(function (h) {
+        rows.push({ d: d, h: h });
+      });
+    });
+
+    var label = mode === 'week'
+      ? 'Week of ' + DOWS[dow(p.start)] + ' ' + MONTHS[p.start.getUTCMonth()].slice(0, 3) + ' ' + p.start.getUTCDate()
+      : MONTHS[cursor.getUTCMonth()] + ' ' + cursor.getUTCFullYear();
+
+    listEl.innerHTML = '<h3>' + esc(label) + ' · ' + esc(COUNTRIES[c.key].name) + '</h3>' +
+      (rows.length ? rows.map(function (r) {
+        return '<div class="row ' + (r.h.type === 'public' ? 'pub' : 'obs') + '">' +
+          '<span class="d">' + DOWS[dow(r.d)] + ' ' + MONTHS[r.d.getUTCMonth()].slice(0, 3) + ' ' + r.d.getUTCDate() + '</span>' +
+          '<span class="n">' + link(r.h) + '</span>' +
+          '<span class="tag">' + (r.h.type === 'public' ? 'day off' : 'observance') + '</span>' +
+        '</div>';
+      }).join('') : '<p class="none">Nothing marked in this ' + mode + '.</p>');
+
+    footEl.innerHTML =
+      '<div><b>Shaded days</b> are public holidays; lighter names are observances that are not days off. Holiday names open Wikipedia in a new tab.</div>' +
+      '<div>' + esc(meta.source) + '.' + (meta.complete ? '' : ' <b>Incomplete:</b> ' + esc(meta.missing)) + '</div>';
+  }
+
+  // holiday name as a Wikipedia link, opening in a new tab
+  function link(h) {
+    return '<a class="wl" href="' + esc(wikiUrl(h.w)) + '" target="_blank" rel="noopener noreferrer"' +
+           ' title="' + esc(h.name) + ' on Wikipedia — opens in a new tab">' + esc(h.name) + '</a>';
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (ch) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch];
+    });
+  }
+
+  function step(dir) {
+    if (mode === 'week') { return addDays(cursor, dir * 7); }
+    return mkUTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1 + dir, 1);
+  }
+
+  function go(dt) { cursor = clamp(dt); render(); }
+
+  prevEl.addEventListener('click', function () { go(step(-1)); });
+  nextEl.addEventListener('click', function () { go(step(1)); });
+  monEl.addEventListener('change', function () { go(mkUTC(+yrEl.value, +monEl.value, 1)); });
+  yrEl.addEventListener('change', function () { go(mkUTC(+yrEl.value, +monEl.value, 1)); });
+  cityEl.addEventListener('change', function () { render(); });
+  todayEl.addEventListener('click', function () { go(todayIn(current().tz)); });
+
+  function setMode(m) {
+    mode = m;
+    mBtn.setAttribute('aria-pressed', String(m === 'month'));
+    wBtn.setAttribute('aria-pressed', String(m === 'week'));
+    render();
+  }
+  mBtn.addEventListener('click', function () { setMode('month'); });
+  wBtn.addEventListener('click', function () { setMode('week'); });
+
+  cursor = clamp(todayIn(CITIES[0].tz));
+  setMode('month');
+})();
+
+</script>
+
+</body>
+</html>
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--display); line-height: 1.45; -webkit-font-smoothing: antialiased;
+}
+.board {
+  margin: 10px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+}
+:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* ---- controls ---- */
+.ctl {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  padding: 9px 12px; border-bottom: 1px solid var(--line);
+}
+.selwrap { position: relative; display: flex; }
+.selwrap::after {
+  content: ""; position: absolute; right: 8px; top: 50%; width: 0; height: 0;
+  margin-top: -2px; pointer-events: none;
+  border-left: 4px solid transparent; border-right: 4px solid transparent;
+  border-top: 5px solid var(--muted);
+}
+select {
+  -webkit-appearance: none; appearance: none;
+  font-family: var(--display); font-size: 12.5px; color: var(--ink);
+  background: var(--sunken); border: 1px solid var(--line);
+  border-radius: 6px; padding: 5px 22px 5px 8px; cursor: pointer;
+}
+select:focus { border-color: var(--brass); }
+#city { font-weight: 600; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button {
+  font-family: var(--display); font-size: 12px; color: var(--muted);
+  background: var(--sunken); border: 0; padding: 5px 11px; cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: var(--brass); color: #fff; font-weight: 600; }
+:root[data-theme="dark"] .seg button[aria-pressed="true"],
+:root:not([data-theme="light"]) .seg button[aria-pressed="true"] { color: #17130A; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .seg button[aria-pressed="true"] { color: #fff; }
+}
+.nav { display: flex; gap: 4px; }
+.nav button, .today {
+  font-family: var(--display); font-size: 12px; color: var(--muted);
+  background: var(--sunken); border: 1px solid var(--line);
+  border-radius: 6px; padding: 5px 9px; cursor: pointer; line-height: 1;
+}
+.nav button { font-family: var(--mono); }
+.nav button:hover, .today:hover { color: var(--brass); border-color: var(--brass); }
+.nav button:disabled { opacity: .35; cursor: default; }
+.spacer { flex: 1 1 auto; }
+
+/* ---- grid ---- */
+.wrap { padding: 10px 12px 4px; }
+.dows, .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.dows { margin-bottom: 4px; }
+.dows span {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--faint); padding-left: 2px;
+}
+.cell {
+  border: 1px solid var(--line-soft); border-radius: 6px;
+  padding: 4px 5px; min-height: 58px; min-width: 0; overflow: hidden;
+}
+.cell.out { opacity: .32; }
+.cell.we { background: var(--sunken); }
+.cell.hol { background: var(--holiday-soft); border-color: var(--holiday-line); }
+.cell.today { border-color: var(--brass); box-shadow: inset 0 0 0 1px var(--brass); }
+.num {
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+  font-size: 11px; color: var(--muted);
+}
+.cell.today .num { color: var(--brass); font-weight: 600; }
+.cell.hol .num { color: var(--holiday); }
+.hn {
+  font-size: 9.5px; line-height: 1.25; color: var(--holiday);
+  margin-top: 2px; overflow: hidden;
+}
+.on { font-size: 9.5px; line-height: 1.25; color: var(--faint); margin-top: 2px; overflow: hidden; }
+.week .cell { min-height: 104px; }
+.week .hn, .week .on { font-size: 10.5px; }
+
+/* ---- list ---- */
+.list { padding: 8px 12px 12px; display: grid; gap: 5px; }
+.list h3 {
+  font-family: var(--mono); font-size: 9.5px; font-weight: 600; letter-spacing: .13em;
+  text-transform: uppercase; color: var(--faint); margin: 2px 0 2px;
+}
+.row { display: grid; grid-template-columns: 78px 1fr auto; gap: 10px; align-items: baseline; font-size: 12.5px; }
+.row .d { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+.row .n { min-width: 0; }
+.row.pub .n { color: var(--ink); font-weight: 500; }
+.row.obs .n { color: var(--muted); }
+.tag {
+  font-family: var(--mono); font-size: 8.5px; letter-spacing: .09em; text-transform: uppercase;
+  padding: 2px 5px; border-radius: 3px; white-space: nowrap;
+}
+.row.pub .tag { color: var(--holiday); background: var(--holiday-soft); }
+.row.obs .tag { color: var(--faint); background: var(--sunken); }
+.none { font-size: 12.5px; color: var(--faint); font-style: italic; }
+
+/* ---- footer ---- */
+.foot {
+  border-top: 1px solid var(--line); padding: 7px 12px;
+  font-size: 10.5px; color: var(--faint); display: grid; gap: 3px;
+}
+.foot b { color: var(--holiday); font-weight: 600; }
+@media (max-width: 520px) {
+  .row { grid-template-columns: 66px 1fr; }
+  .row .tag { display: none; }
+  .cell { min-height: 48px; }
+}
 </style>
 
 </head>

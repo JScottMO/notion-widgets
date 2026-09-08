@@ -440,6 +440,11 @@ function holidaysFor(key, year) {
 (function () {
   'use strict';
 
+  // If this file is ever included twice, run once. A double include otherwise
+  // appends a second row of weekday headers to the same container.
+  if (window.__daysOffLoaded) { return; }
+  window.__daysOffLoaded = true;
+
   var MIN_YEAR = 2021, MAX_YEAR = 2035;   // Juneteenth exists from 2021; rules stable through 2035
   var MONTHS = ['January','February','March','April','May','June',
                 'July','August','September','October','November','December'];
@@ -618,6 +623,5 @@ function holidaysFor(key, year) {
 })();
 
 </script>
-
 </body>
 </html>

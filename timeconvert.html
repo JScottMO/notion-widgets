@@ -198,8 +198,9 @@ function resolveWallClock(tz, y, mo, d, h, mi) {
   });
 
   if (hits.length === 0) {
-    // Spring-forward gap: nothing maps back. Report the instant clocks jump to.
-    var jumpTo = naive - Math.max(offBefore, offAfter) * 60000;
+    // Spring-forward gap. Shift forward by the length of the gap, which is what
+    // java.time and RFC 5545 do — the entered time lands after the jump, not before it.
+    var jumpTo = naive - offBefore * 60000;
     return { status: 'gap', ts: jumpTo, skipped: Math.abs(offAfter - offBefore) };
   }
   hits.sort(function (a, b) { return a.ts - b.ts; });
@@ -229,6 +230,11 @@ function relLabel(mins) {
   var a = Math.abs(mins), h = Math.floor(a / 60), m = a % 60;
   var t = h + (m ? ':' + (m < 10 ? '0' : '') + m : '') + (h === 1 && !m ? ' hour' : ' hours');
   return t + (mins > 0 ? ' ahead' : ' behind');
+}
+
+function relPhrase(mins, name) {
+  if (mins === 0) { return 'same clock time as ' + name; }
+  return relLabel(mins) + (mins > 0 ? ' of ' : ' ') + name;
 }
 
 
@@ -381,7 +387,7 @@ function relLabel(mins) {
     l2El.textContent = [
       zoneAbbr(tz, when, 'long'),
       utcLabel(offsetMin(tz, when)),
-      relLabel(rel) + ' of Central'
+      relPhrase(rel, 'Central')
     ].filter(Boolean).join('  ·  ');
 
     // spell out how the Central input was read, so CST vs CDT is never a guess

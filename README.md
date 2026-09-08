@@ -3,12 +3,8 @@
 This is a collection of code used by Prof C in his Notion database. 
 
 What time is it here when it is ____ in ____
-(https://jscottmo.github.io/notion-widgets/chronometer.html?)
+https://jscottmo.github.io/notion-widgets/chronometer.html?view=from
 
-
-
-](https://jscottmo.github.io/notion-widgets/chronometer.html?view=from)
-[Link Text](URL)
 What time is it in ___ when it is ___ here
 https://jscottmo.github.io/notion-widgets/chronometer.html?view=to
 

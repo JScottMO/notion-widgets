@@ -19,7 +19,6 @@
     --cbt: #C85A05;   --cbt-fill: #FBF0E6;
     --sub: #5F8F12;   --sub-fill: #F1F5E5;
     --trail: #0B6EAE; --trail-fill: #E8F1F8;
-    --tp: #7A4FB5;    --tp-fill: #F2EDF9;
     --proj: #A8324A;  --proj-fill: #F9EBEE;
     --prep: #8C897E;  --prep-fill: transparent;
 
@@ -34,7 +33,6 @@
       --cbt: #C9793A;   --cbt-fill: #2E2317;
       --sub: #74A733;   --sub-fill: #232B17;
       --trail: #4E93CE; --trail-fill: #18262F;
-      --tp: #A384D6;    --tp-fill: #261F33;
       --proj: #D0667C;  --proj-fill: #301A1F;
       --prep: #85817A;  --prep-fill: transparent;
     }
@@ -45,7 +43,6 @@
     --cbt: #C9793A;   --cbt-fill: #2E2317;
     --sub: #74A733;   --sub-fill: #232B17;
     --trail: #4E93CE; --trail-fill: #18262F;
-    --tp: #A384D6;    --tp-fill: #261F33;
     --proj: #D0667C;  --proj-fill: #301A1F;
     --prep: #85817A;  --prep-fill: transparent;
   }
@@ -79,7 +76,6 @@
   .key--cbt   { --c: var(--cbt);   --f: var(--cbt-fill); }
   .key--sub   { --c: var(--sub);   --f: var(--sub-fill); }
   .key--yt    { --c: var(--trail); --f: var(--trail-fill); }
-  .key--tp    { --c: var(--tp);    --f: var(--tp-fill); }
   .key--proj  { --c: var(--proj);  --f: var(--proj-fill); }
   .key--prep  { --c: var(--prep);  --f: var(--surface); }
   .key .kn { font-weight: 600; }
@@ -137,7 +133,6 @@
   .dot--cbt   { --c: var(--cbt);   --f: var(--cbt-fill); }
   .dot--sub   { --c: var(--sub);   --f: var(--sub-fill); }
   .dot--yt    { --c: var(--trail); --f: var(--trail-fill); }
-  .dot--tp    { --c: var(--tp);    --f: var(--tp-fill); }
   .dot--proj  { --c: var(--proj);  --f: var(--proj-fill); }
 
   .fallback { border-top: 1px solid var(--line-soft); padding-top: 10px; }
@@ -202,7 +197,6 @@
   .chip--cbt   { --c: var(--cbt);   --f: var(--cbt-fill); }
   .chip--sub   { --c: var(--sub);   --f: var(--sub-fill); }
   .chip--yt    { --c: var(--trail); --f: var(--trail-fill); }
-  .chip--tp    { --c: var(--tp);    --f: var(--tp-fill); }
   .chip--proj  { --c: var(--proj);  --f: var(--proj-fill); }
   .chip--prep  {
     --c: var(--line); --f: transparent;
@@ -219,7 +213,6 @@
   .grid[data-focus="cbt"]   .chip--cbt,
   .grid[data-focus="sub"]   .chip--sub,
   .grid[data-focus="yt"]    .chip--yt,
-  .grid[data-focus="tp"]    .chip--tp,
   .grid[data-focus="proj"]  .chip--proj,
   .grid[data-focus="prep"]  .chip--prep { opacity: 1; }
 
@@ -303,7 +296,6 @@
       <span class="dlab">Calendar</span>
       <button class="btn btn--go" type="button" data-ics="all">All events</button>
       <button class="btn" type="button" data-ics="cbt"><i class="dot dot--cbt"></i>CBT</button>
-      <button class="btn" type="button" data-ics="tp"><i class="dot dot--tp"></i>Tech Press</button>
       <button class="btn" type="button" data-ics="yt"><i class="dot dot--yt"></i>YouTube</button>
       <button class="btn" type="button" data-ics="sub"><i class="dot dot--sub"></i>Substack</button>
       <button class="btn" type="button" data-ics="proj"><i class="dot dot--proj"></i>Projects</button>
@@ -311,7 +303,6 @@
   </div>
   <div class="legend" role="group" aria-label="Filter by workstream">
     <button class="key key--cbt" type="button" data-stream="cbt" aria-pressed="false"><span class="sw" aria-hidden="true"></span><span class="kn">CBT Column</span><span class="kc">monthly</span></button>
-    <button class="key key--tp" type="button" data-stream="tp" aria-pressed="false"><span class="sw" aria-hidden="true"></span><span class="kn">Technology Press</span><span class="kc">monthly</span></button>
     <button class="key key--yt" type="button" data-stream="yt" aria-pressed="false"><span class="sw" aria-hidden="true"></span><span class="kn">YouTube</span><span class="kc">twice monthly</span></button>
     <button class="key key--sub" type="button" data-stream="sub" aria-pressed="false"><span class="sw" aria-hidden="true"></span><span class="kn">Substack</span><span class="kc">twice monthly</span></button>
     <button class="key key--proj" type="button" data-stream="proj" aria-pressed="false"><span class="sw" aria-hidden="true"></span><span class="kn">Projects &amp; talks</span><span class="kc">added below</span></button>
@@ -363,9 +354,6 @@
     'draft-cbt':   { stream: 'cbt', min: 90, title: 'Draft CBT Column' },
     'finish-cbt':  { stream: 'cbt', min: 90, title: 'Finish CBT Column' },
     'send-cbt':    { stream: 'cbt', min: 30, title: 'Send CBT Column' },
-    'draft-tp':    { stream: 'tp',  min: 90, title: 'Draft Technology Press Column' },
-    'finish-tp':   { stream: 'tp',  min: 90, title: 'Finish Technology Press Column' },
-    'send-tp':     { stream: 'tp',  min: 30, title: 'Send Technology Press Column' },
     'prep-yt':     { stream: 'yt',  min: 45, title: 'Prepare four YouTube scripts for drafting' },
     'perfect-yt':  { stream: 'yt',  min: 60, title: 'Perfect YouTube scripts' },
     'record-yt':   { stream: 'yt',  min: 90, title: 'Record YouTube videos' },
@@ -380,12 +368,12 @@
     '1-3': ['finish-cbt'], '1-4': ['book-notes'], '1-5': ['prep-yt'],
     '2-0': ['select-topics'], '2-1': ['compile-sub', 'send-cbt'], '2-2': ['book-notes'],
     '2-3': ['send-sub', 'perfect-yt'], '2-4': ['book-notes'], '2-5': ['record-yt'],
-    '3-0': ['select-topics'], '3-1': ['draft-tp'], '3-2': ['book-notes'],
-    '3-3': ['finish-tp'], '3-4': ['book-notes'], '3-5': ['prep-yt'],
-    '4-0': ['select-topics'], '4-1': ['compile-sub', 'send-tp'], '4-2': ['book-notes'],
+    '3-0': ['select-topics'], '3-1': ['book-notes'], '3-2': ['book-notes'],
+    '3-3': ['book-notes'], '3-4': ['book-notes'], '3-5': ['prep-yt'],
+    '4-0': ['select-topics'], '4-1': ['compile-sub'], '4-2': ['book-notes'],
     '4-3': ['send-sub', 'perfect-yt'], '4-4': ['book-notes'], '4-5': ['record-yt']
   };
-  var STREAM_NAME = { cbt: 'CBT Column', tp: 'Technology Press Column', yt: 'YouTube',
+  var STREAM_NAME = { cbt: 'CBT Column', yt: 'YouTube',
                       sub: 'Substack', proj: 'Projects and talks' };
   var START_HOUR = 8;
   var DAYSHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];

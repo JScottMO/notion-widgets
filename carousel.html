@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Image Carousel</title>
+<!--
+  USAGE (one file, unlimited carousels):
+    carousel.html?set=sample
+      -> shows images/sample/image1.png, image2.png, ... (stops at first missing number)
+
+  Optional parameters:
+    ext=jpg        file extension (default png)
+    fit=cover      fill the frame and crop (default contain = show whole image)
+    bg=ffffff      background color, hex without # (default: transparent)
+    v=2            cache-buster; bump after replacing images
+-->
+<style>
+  :root { --btn-bg: rgba(0,0,0,.45); --btn-fg: #fff; --dot: rgba(0,0,0,.25); --dot-on: rgba(0,0,0,.75); }
+  @media (prefers-color-scheme: dark) { :root { --dot: rgba(255,255,255,.3); --dot-on: rgba(255,255,255,.9); } }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: transparent; font-family: system-ui, sans-serif; }
+  .wrap { position: relative; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+  .stage { position: relative; flex: 1; min-height: 0; overflow: hidden; touch-action: pan-y; }
+  .track { display: flex; height: 100%; transition: transform .35s ease; }
+  .slide { flex: 0 0 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+  .slide img { width: 100%; height: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; }
+  .fit-cover .slide img { object-fit: cover; }
+  .nav { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border: 0; border-radius: 50%;
+         background: var(--btn-bg); color: var(--btn-fg); font-size: 22px; line-height: 40px; cursor: pointer; opacity: .8; }
+  .nav:hover, .nav:focus-visible { opacity: 1; }
+  .prev { left: 10px; } .next { right: 10px; }
+  .dots { display: flex; justify-content: center; gap: 8px; padding: 10px 0 6px; }
+  .dots button { width: 9px; height: 9px; padding: 0; border: 0; border-radius: 50%; background: var(--dot); cursor: pointer; }
+  .dots button[aria-current="true"] { background: var(--dot-on); }
+  .msg { margin: auto; color: #888; font-size: 14px; padding: 16px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap" role="region" aria-roledescription="carousel" aria-label="Image carousel">
+  <div class="msg" id="msg">Loading…</div>
+</div>
+<script>
+(function () {
+  var p = new URLSearchParams(location.search);
+  var set = (p.get('set') || 'sample').replace(/[^\w\-\/]/g, '');
+  var ext = (p.get('ext') || 'png').replace(/[^\w]/g, '');
+  var v = p.get('v') ? '?v=' + encodeURIComponent(p.get('v')) : '';
+  var wrap = document.getElementById('wrap');
+  if (p.get('fit') === 'cover') wrap.classList.add('fit-cover');
+  if (p.get('bg')) document.body.style.background = '#' + p.get('bg').replace(/[^0-9a-fA-F]/g, '');
+
+  function url(i) { return 'images/' + set + '/image' + i + '.' + ext + v; }
+
+  // Find image1, image2, ... until one is missing (max 50).
+  var srcs = [];
+  (function probe(i) {
+    if (i > 50) return build();
+    var im = new Image();
+    im.onload = function () { srcs.push(url(i)); probe(i + 1); };
+    im.onerror = build;
+    im.src = url(i);
+  })(1);
+
+  function build() {
+    if (!srcs.length) {
+      document.getElementById('msg').textContent = 'No images found at images/' + set + '/image1.' + ext;
+      return;
+    }
+    wrap.innerHTML =
+      '<div class="stage"><div class="track" id="track"></div>' +
+      (srcs.length > 1 ? '<button class="nav prev" aria-label="Previous">&#8249;</button><button class="nav next" aria-label="Next">&#8250;</button>' : '') +
+      '</div>' + (srcs.length > 1 ? '<div class="dots" id="dots"></div>' : '');
+    var track = document.getElementById('track'), dots = document.getElementById('dots'), idx = 0;
+    srcs.forEach(function (s, i) {
+      var d = document.createElement('div'); d.className = 'slide';
+      d.setAttribute('aria-label', (i + 1) + ' of ' + srcs.length);
+      d.innerHTML = '<img alt="Slide ' + (i + 1) + '" src="' + s + '">';
+      track.appendChild(d);
+      if (dots) {
+        var b = document.createElement('button');
+        b.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+        b.onclick = function () { go(i); };
+        dots.appendChild(b);
+      }
+    });
+    function go(n) {
+      idx = (n + srcs.length) % srcs.length;
+      track.style.transform = 'translateX(' + (-100 * idx) + '%)';
+      if (dots) [].forEach.call(dots.children, function (b, i) { b.setAttribute('aria-current', i === idx); });
+    }
+    if (srcs.length > 1) {
+      wrap.querySelector('.prev').onclick = function () { go(idx - 1); };
+      wrap.querySelector('.next').onclick = function () { go(idx + 1); };
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowLeft') go(idx - 1);
+        if (e.key === 'ArrowRight') go(idx + 1);
+      });
+      var x0 = null, stage = wrap.querySelector('.stage');
+      stage.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+      stage.addEventListener('touchend', function (e) {
+        if (x0 === null) return;
+        var dx = e.changedTouches[0].clientX - x0; x0 = null;
+        if (Math.abs(dx) > 40) go(idx + (dx < 0 ? 1 : -1));
+      });
+    }
+    go(0);
+  }
+})();
+</script>
+</body>
+</html>

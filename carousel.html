@@ -6,10 +6,14 @@
 <title>Image Carousel</title>
 <!--
   USAGE (one file, unlimited carousels):
-    carousel.html?set=sample
-      -> shows images/sample/image1.png, image2.png, ... (stops at first missing number)
+    carousel.html?set=joe
+      -> shows joe1.png, joe2.png, ... uploaded next to this file (no folders needed)
+      -> or images/joe/image1.png, image2.png, ... if you prefer folders
+      Stops at the first missing number. Names are case-sensitive.
 
   Optional parameters:
+    repo=carousel-images   pull images from another of your GitHub Pages repos
+                           (https://jscottmo.github.io/carousel-images/joe1.png)
     ext=jpg        file extension (default png)
     fit=cover      fill the frame and crop (default contain = show whole image)
     bg=ffffff      background color, hex without # (default: transparent)
@@ -50,21 +54,44 @@
   if (p.get('fit') === 'cover') wrap.classList.add('fit-cover');
   if (p.get('bg')) document.body.style.background = '#' + p.get('bg').replace(/[^0-9a-fA-F]/g, '');
 
-  function url(i) { return 'images/' + set + '/image' + i + '.' + ext + v; }
+  // Two naming styles are supported:
+  //   flat (no folders):  joe1.png, joe2.png ... in the same place as carousel.html
+  //   folder:             images/joe/image1.png, image2.png ...
+  // repo=carousel-images -> load images from https://jscottmo.github.io/carousel-images/
+  var repo = (p.get('repo') || '').replace(/[^\w\-.]/g, '');
+  // Works whether or not GitHub Pages is turned on for the image repo.
+  var bases = repo
+    ? ['https://jscottmo.github.io/' + repo + '/',
+       'https://raw.githubusercontent.com/JScottMO/' + repo + '/main/']
+    : [''];
+  var base = bases[0];
+  var styles = [];
+  bases.forEach(function (b) {
+    styles.push(function (i) { return b + set + i + '.' + ext + v; });
+    styles.push(function (i) { return b + 'images/' + set + '/image' + i + '.' + ext + v; });
+  });
+  var url, srcs = [];
 
-  // Find image1, image2, ... until one is missing (max 50).
-  var srcs = [];
-  (function probe(i) {
+  (function pickStyle(s) {
+    if (s >= styles.length) return build();
+    var im = new Image();
+    im.onload = function () { url = styles[s]; probe(1); };
+    im.onerror = function () { pickStyle(s + 1); };
+    im.src = styles[s](1);
+  })(0);
+
+  // Find 1, 2, 3 ... until one is missing (max 50).
+  function probe(i) {
     if (i > 50) return build();
     var im = new Image();
     im.onload = function () { srcs.push(url(i)); probe(i + 1); };
     im.onerror = build;
     im.src = url(i);
-  })(1);
+  }
 
   function build() {
     if (!srcs.length) {
-      document.getElementById('msg').textContent = 'No images found at images/' + set + '/image1.' + ext;
+      document.getElementById('msg').textContent = 'No images found. Expected ' + (base || '(this repo)/') + set + '1.' + ext;
       return;
     }
     wrap.innerHTML =

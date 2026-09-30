@@ -80,6 +80,11 @@
 <script>
   const params = new URLSearchParams(location.search);
   const TOTAL = Math.max(1, parseInt(params.get("s"), 10) || 90) * 1000;
+  // Optional background color, e.g. ?bg=edf3ec, to blend with the block behind the embed
+  const bg = (params.get("bg") || "").replace(/^#/, "");
+  if (/^([0-9a-f]{3}|[0-9a-f]{6})$/i.test(bg)) {
+    document.documentElement.style.setProperty("--bg", "#" + bg);
+  }
 
   const el = id => document.getElementById(id);
   const timer = el("timer"), fill = el("fill"), time = el("time"), startBtn = el("start"), stopBtn = el("stop");

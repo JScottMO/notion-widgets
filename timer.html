@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>90-second timer</title>
+<style>
+  :root {
+    --ink: #2b2a27;
+    --muted: #8a877f;
+    --track: #e9e7e2;
+    --green: #3f8f4f;
+    --yellow: #d9a520;
+    --red: #c93c2c;
+    --fill: var(--green);
+    --done: var(--red);
+    --bg: transparent;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #e6e4df;
+      --muted: #8f8c85;
+      --track: #34332f;
+      --green: #5cb86e;
+      --yellow: #e8bb3d;
+      --red: #e8604d;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); }
+  body {
+    display: flex; align-items: center;
+    font: 500 14px/1 ui-sans-serif, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    padding: 0 6px;
+  }
+  .timer { display: flex; align-items: center; gap: 10px; width: 100%; height: 32px; }
+  button {
+    flex: none; width: 28px; height: 28px; border: 0; border-radius: 50%;
+    background: none; color: var(--ink); cursor: pointer;
+    display: grid; place-items: center;
+  }
+  button:hover:not(:disabled) { background: var(--track); }
+  button:disabled { opacity: .3; cursor: default; }
+  .timer { gap: 6px; }
+  .bar { margin: 0 6px; }
+  button:focus-visible { outline: 2px solid var(--fill); outline-offset: 1px; }
+  button svg { width: 14px; height: 14px; fill: currentColor; }
+  .reset { color: var(--muted); }
+  .bar { flex: 1; height: 0.72em; border-radius: 2px; background: var(--track); overflow: hidden; }
+  .fill { height: 100%; width: 100%; background: var(--green); transform-origin: left; transition: background-color .4s; }
+  .timer.zone-yellow .fill { background: var(--yellow); }
+  .timer.zone-red .fill { background: var(--red); }
+  .timer.zone-urgent .fill { background: var(--red); animation: urgent 1s ease-in-out infinite; }
+  @keyframes urgent { 50% { opacity: .25; } }
+  .time { flex: none; min-width: 3.2em; text-align: left; font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+  .timer.done .time { color: var(--done); }
+  .timer.done .bar { animation: pulse 1s ease-in-out 3; }
+  @keyframes pulse { 50% { background: var(--done); } }
+  @media (prefers-reduced-motion: reduce) {
+    .timer.done .bar { animation: none; background: var(--done); }
+    .timer.zone-urgent .fill { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="timer" id="timer">
+  <span class="time" id="time" aria-live="off">1:30</span>
+  <div class="bar" role="progressbar" aria-label="Time remaining"><div class="fill" id="fill"></div></div>
+  <button id="start" aria-label="Start" title="Start">
+    <svg viewBox="0 0 16 16"><path d="M4 2.5v11l9.5-5.5z"/></svg>
+  </button>
+  <button id="stop" aria-label="Stop" title="Stop" disabled>
+    <svg viewBox="0 0 16 16"><path d="M3.5 3.5h9v9h-9z"/></svg>
+  </button>
+  <button id="reset" class="reset" aria-label="Reset" title="Reset">
+    <svg viewBox="0 0 16 16"><path d="M8 3a5 5 0 1 1-4.9 6h1.6A3.5 3.5 0 1 0 8 4.5v2L4.8 3.8 8 1z"/></svg>
+  </button>
+</div>
+<script>
+  const params = new URLSearchParams(location.search);
+  const TOTAL = Math.max(1, parseInt(params.get("s"), 10) || 90) * 1000;
+
+  const el = id => document.getElementById(id);
+  const timer = el("timer"), fill = el("fill"), time = el("time"), startBtn = el("start"), stopBtn = el("stop");
+
+  let remaining = TOTAL, endAt = 0, running = false, raf = 0;
+
+  function fmt(ms) {
+    const s = Math.ceil(ms / 1000);
+    return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+  }
+  // Cutoffs scale with the timer length, keeping the 90-second proportions:
+  // yellow at 1/2 remaining, red at 1/3, pulsing at 1/9.
+  function zone(ms) {
+    const sec = Math.ceil(ms / 1000), total = TOTAL / 1000;
+    if (sec > total / 2) return "zone-green";
+    if (sec > total / 3) return "zone-yellow";
+    if (sec >= total / 9) return "zone-red";
+    return "zone-urgent";
+  }
+  function render() {
+    time.textContent = fmt(remaining);
+    const z = zone(remaining);
+    if (!timer.classList.contains(z)) {
+      timer.classList.remove("zone-green", "zone-yellow", "zone-red", "zone-urgent");
+      timer.classList.add(z);
+    }
+    fill.style.transform = "scaleX(" + (remaining / TOTAL) + ")";
+  }
+  function tick() {
+    remaining = Math.max(0, endAt - performance.now());
+    render();
+    if (remaining === 0) return finish();
+    raf = requestAnimationFrame(tick);
+  }
+  function start() {
+    if (remaining === 0) reset();
+    running = true; endAt = performance.now() + remaining;
+    startBtn.disabled = true; stopBtn.disabled = false;
+    timer.classList.remove("done");
+    raf = requestAnimationFrame(tick);
+  }
+  function pause() {
+    running = false; cancelAnimationFrame(raf);
+    startBtn.disabled = false; stopBtn.disabled = true;
+  }
+  function reset() {
+    pause(); remaining = TOTAL; timer.classList.remove("done"); render();
+  }
+  function finish() {
+    pause(); timer.classList.add("done"); chime();
+  }
+  function chime() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [0, 0.25].forEach(t => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.frequency.value = 880; o.connect(g); g.connect(ctx.destination);
+        g.gain.setValueAtTime(0.0001, ctx.currentTime + t);
+        g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + t + 0.2);
+        o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.22);
+      });
+    } catch (e) {}
+  }
+
+  startBtn.addEventListener("click", start);
+  stopBtn.addEventListener("click", pause);
+  el("reset").addEventListener("click", reset);
+  document.addEventListener("keydown", e => {
+    if (e.key === " " && e.target.tagName !== "BUTTON") { e.preventDefault(); running ? pause() : start(); }
+    if (e.key === "r" || e.key === "R") reset();
+  });
+  render();
+</script>
+</body>
+</html>
